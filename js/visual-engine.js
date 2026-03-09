@@ -5,10 +5,12 @@
 
 const VisualEngine = (() => {
   let canvas, ctx;
+  let staticCanvas, staticCtx;
   let animFrameId = null;
   let noiseData = null;
   let time = 0;
   let currentState = 'green';
+  let currentIntensity = 0;
 
   // Simple hash for pseudo-random noise
   function hash(x, y, seed) {
@@ -51,12 +53,16 @@ const VisualEngine = (() => {
 
   function init() {
     canvas = document.getElementById('noise-canvas');
-    if (!canvas) return;
+    staticCanvas = document.getElementById('noise-rain');
+    if (!canvas || !staticCanvas) return;
+    
     ctx = canvas.getContext('2d');
+    staticCtx = staticCanvas.getContext('2d');
+    
     resize();
     window.addEventListener('resize', resize);
     initDiagnosticGrid();
-    updateBackground(0); // Initial low-intensity background
+    updateBackground(0); // Initial low intensity background
   }
 
   // Horror Image Categories
@@ -103,7 +109,7 @@ const VisualEngine = (() => {
   }
 
   function resize() {
-    // Use lower resolution for performance
+    // Use lower resolution for noise performance
     const scale = 0.25;
     canvas.width = window.innerWidth * scale;
     canvas.height = window.innerHeight * scale;
@@ -111,58 +117,111 @@ const VisualEngine = (() => {
     canvas.style.height = '100%';
     canvas.style.imageRendering = 'pixelated';
     noiseData = ctx.createImageData(canvas.width, canvas.height);
+
+    // Static canvas setup (higher res for text)
+    staticCanvas.width = window.innerWidth;
+    staticCanvas.height = window.innerHeight;
+  }
+
+  function drawDigitalGrit() {
+    const w = staticCanvas.width;
+    const h = staticCanvas.height;
+    
+    // Transparent clear for clinical void, dark for others
+    if (currentState === 'void') {
+      staticCtx.fillStyle = 'rgba(230, 230, 230, 0.15)';
+    } else {
+      staticCtx.fillStyle = 'rgba(0, 0, 0, 0.15)';
+    }
+    staticCtx.fillRect(0, 0, w, h);
+
+    const intensityFactor = currentIntensity / 10;
+    const blockCount = 10 + Math.floor(intensityFactor * 40);
+
+    // 1. Digital Grit Blocks (Crunchy/Pixelated)
+    for (let i = 0; i < blockCount; i++) {
+      const gX = Math.floor(Math.random() * w);
+      const gY = Math.floor(Math.random() * h);
+      // Small, square-ish "data" blocks
+      const gW = 2 + Math.random() * 8 * (1 + intensityFactor * 5);
+      const gH = 2 + Math.random() * 4 * (1 + intensityFactor * 2);
+      
+      const alpha = 0.1 + Math.random() * 0.2 * intensityFactor;
+      
+      if (currentState === 'void') {
+        staticCtx.fillStyle = `rgba(40, 40, 45, ${alpha * 2})`; // Dark grit on light
+      } else if (currentState === 'red') {
+        staticCtx.fillStyle = `rgba(255, 10, 10, ${alpha})`;
+      } else {
+        staticCtx.fillStyle = `rgba(0, 255, 65, ${alpha})`;
+      }
+      staticCtx.fillRect(gX, gY, gW, gH);
+    }
+
+    // 2. Bit-Crushed Logic Bursts
+    if (Math.random() < 0.15 + intensityFactor * 0.3) {
+      const burstY = Math.floor(Math.random() * h);
+      const burstH = 2 + Math.floor(Math.random() * 10);
+      const burstW = w;
+      
+      const burstData = staticCtx.createImageData(burstW, burstH);
+      for (let i = 0; i < burstData.data.length; i += 4) {
+        // High contrast binary noise
+        const val = Math.random() > 0.5 ? 255 : 0;
+        if (currentState === 'void') {
+          burstData.data[i] = burstData.data[i+1] = burstData.data[i+2] = 20; // Dark burst
+          burstData.data[i + 3] = 30;
+        } else {
+          burstData.data[i] = currentState === 'red' ? val : 0;
+          burstData.data[i + 1] = currentState === 'red' ? 0 : val;
+          burstData.data[i + 2] = 0;
+          burstData.data[i + 3] = 60;
+        }
+      }
+      staticCtx.putImageData(burstData, 0, burstY);
+    }
   }
 
   function startAnimation() {
     if (animFrameId) return;
 
     function render() {
-      time += 0.003; // Very slow movement
+      // 1. Base Procedural Noise (Now bit-crushed)
+      time += 0.005; 
       const w = canvas.width;
       const h = canvas.height;
       const data = noiseData.data;
-
-      const noiseScale = 0.02;
+      const noiseScale = 0.05; // Sharper scale
 
       for (let y = 0; y < h; y++) {
         for (let x = 0; x < w; x++) {
           const idx = (y * w + x) * 4;
+          let n = fbm(x * noiseScale + time, y * noiseScale, 42);
+          // Hard threshold for "digital" look
+          n = n > 0.5 ? 1 : 0;
+          
+          if (Math.random() < 0.05) n = Math.random();
+          const brightness = n * 50;
 
-          // Procedural noise
-          let n = fbm(x * noiseScale + time, y * noiseScale + time * 0.5, 42);
-
-          // Add some random static
-          if (Math.random() < 0.02) {
-            n = Math.random();
-          }
-
-          const brightness = Math.floor(n * 40);
-
-          // Color based on state
           let r, g, b;
-          if (currentState === 'red') {
-            r = brightness + 5;
-            g = Math.floor(brightness * 0.1);
-            b = Math.floor(brightness * 0.05);
-          } else if (currentState === 'void') {
-            r = Math.floor(brightness * 0.2);
-            g = Math.floor(brightness * 0.2);
-            b = Math.floor(brightness * 0.25);
+          if (currentState === 'void') {
+            r = g = b = 200 + brightness; // Light grey base
+          } else if (currentState === 'red') {
+            r = brightness + 10; g = b = 0;
+          } else if (currentState === 'void-old') { // deprecated
+             r = g = Math.floor(brightness * 0.2); b = Math.floor(brightness * 0.25);
           } else {
-            // green
-            r = Math.floor(brightness * 0.1);
-            g = brightness + 3;
-            b = Math.floor(brightness * 0.15);
+            r = 0; g = brightness + 5; b = 0;
           }
 
-          data[idx] = r;
-          data[idx + 1] = g;
-          data[idx + 2] = b;
-          data[idx + 3] = 255;
+          data[idx] = r; data[idx + 1] = g; data[idx + 2] = b; data[idx + 3] = 255;
         }
       }
-
       ctx.putImageData(noiseData, 0, 0);
+
+      // 2. Digital Grit Static
+      drawDigitalGrit();
+
       animFrameId = requestAnimationFrame(render);
     }
 
@@ -180,35 +239,57 @@ const VisualEngine = (() => {
    * Set visual color state.
    * @param {'green' | 'red' | 'void' | 'glitch'} state
    */
+  /**
+   * Set visual color state.
+   * @param {'green' | 'red' | 'void' | 'glitch'} state
+   */
   function setColorState(state) {
     const body = document.body;
     body.classList.remove('state-red', 'state-void');
+    const staticCanvas = document.getElementById('noise-rain');
 
     if (state === 'red') {
       body.classList.add('state-red');
       currentState = 'red';
+      body.style.backgroundColor = '#000';
+      document.documentElement.style.setProperty('--clr-text', '#ff1a1a');
+      document.documentElement.style.setProperty('--clr-glow', 'rgba(255,10,10,0.4)');
+      if (staticCanvas) {
+        staticCanvas.style.opacity = '0.15';
+        staticCanvas.style.mixBlendMode = 'color-dodge';
+      }
     } else if (state === 'void') {
       body.classList.add('state-void');
       currentState = 'void';
+      // Clinical Void: Sterile bright environment
+      body.style.backgroundColor = '#e0e0e0'; 
+      document.documentElement.style.setProperty('--clr-text', '#111');
+      document.documentElement.style.setProperty('--clr-glow', 'rgba(0,0,0,0.1)');
+      if (staticCanvas) {
+        staticCanvas.style.opacity = '0.35';
+        staticCanvas.style.mixBlendMode = 'multiply';
+      }
     } else if (state === 'glitch') {
-      // Rapid flickering between states
       let count = 0;
-      const flickerInterval = setInterval(() => {
-        if (count > 10) {
-          clearInterval(flickerInterval);
-          body.classList.remove('state-red', 'state-void');
-          currentState = 'green';
+      const flicker = setInterval(() => {
+        if (count > 8) {
+          clearInterval(flicker);
+          setColorState('green');
           return;
         }
-        const states = ['', 'state-red', 'state-void'];
-        const pick = states[Math.floor(Math.random() * states.length)];
-        body.classList.remove('state-red', 'state-void');
-        if (pick) body.classList.add(pick);
+        const s = Math.random() < 0.5 ? 'red' : 'void';
+        setColorState(s);
         count++;
-      }, 100);
-      currentState = 'green';
+      }, 80);
     } else {
       currentState = 'green';
+      body.style.backgroundColor = '#000';
+      document.documentElement.style.setProperty('--clr-text', '#00ff41');
+      document.documentElement.style.setProperty('--clr-glow', 'rgba(0,255,65,0.3)');
+      if (staticCanvas) {
+        staticCanvas.style.opacity = '0.15';
+        staticCanvas.style.mixBlendMode = 'color-dodge';
+      }
     }
   }
 
@@ -235,6 +316,7 @@ const VisualEngine = (() => {
    * Technical GUI: Update escalation level (0-10)
    */
   function setEscalation(level) {
+    currentIntensity = level; // Sync local intensity for rain
     const fill = document.getElementById('escalation-bar-fill');
     if (!fill) return;
     const percent = Math.min(100, Math.max(5, level * 10));

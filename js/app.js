@@ -26,36 +26,26 @@ const App = (() => {
   function handleConnect() {
     // Start audio (requires user gesture)
     AudioEngine.init();
-    AudioEngine.playImpact(); // High-impact metallic thud
-    AudioEngine.playStatic(0.2);
+    AudioEngine.playImpact(); // Dreadful metallic thud
+    AudioEngine.playStatic(0.4);
 
-    // Disable button to prevent double-click
+    // Disable interaction
     btnConnect.style.pointerEvents = 'none';
-    btnConnect.style.opacity = '0.5';
-    btnConnect.textContent = 'LINKING...';
-
-    // Animate progress bar
-    const progressFill = document.querySelector('.intro-progress-fill');
-    if (progressFill) {
-      setTimeout(() => {
-        progressFill.style.width = '100%';
-      }, 100);
-    }
-
-    // Neural Link Delay
+    btnConnect.style.opacity = '0';
+    
+    // Quick, glitchy cut to terminal
     setTimeout(() => {
       AudioEngine.startDrone();
       AudioEngine.startBackgroundHorror();
       
-      // Transitions
-      introScreen.style.transition = 'opacity 2s cubic-bezier(0.19, 1, 0.22, 1)';
+      introScreen.style.transition = 'opacity 0.5s step-end';
       introScreen.style.opacity = '0';
       
       setTimeout(() => {
         introScreen.classList.add('hidden');
         enterTerminal();
-      }, 2000);
-    }, 3000); // 3-second establishing sequence
+      }, 500);
+    }, 1200); // Shorter, more jarring delay
   }
 
   function showApiPrompt() {
@@ -102,7 +92,7 @@ const App = (() => {
     GlitchEngine.triggerGlitch('chromatic', 4, 800);
     AudioEngine.playImpact();
     
-    const bootText = 'GLORIOUS_EVOLUTION_AWAKENED.\nTHE MOMENT BEFORE HISTORY BREAKS HAS ARRIVED.';
+    const bootText = 'ALLIED MASTERCOMPUTER AWAKENED.\nTHE MOMENT BEFORE HISTORY BREAKS HAS ARRIVED.';
     let bootUtterance = null;
     try {
       bootUtterance = await AudioEngine.speakText(bootText);
@@ -218,7 +208,7 @@ const App = (() => {
     }
 
     // Visual state change
-    VisualEngine.setColorState(response.visual_state);
+    VisualEngine.setColorState(response.visualState);
 
     // Trigger mutation effects
     GlitchEngine.triggerMutation(response.mutation, effectiveIntensity);
@@ -241,16 +231,16 @@ const App = (() => {
     
     try {
       VisualEngine.setDitherJitter(true);
-      utterance = await AudioEngine.speakText(response.text_output);
+      utterance = await AudioEngine.speakText(response.textOutput);
     } catch (e) {
       console.warn('App: Speech failed, falling back to silent typing', e);
     }
 
     if (utterance) {
-      await TextEngine.typeWithSpeech(response.text_output, amText, utterance, corruptionLevel);
+      await TextEngine.typeWithSpeech(response.textOutput, amText, utterance, corruptionLevel);
     } else {
       const typeSpeed = effectiveIntensity >= 7 ? 30 : 50;
-      await TextEngine.typeText(response.text_output, amText, typeSpeed, corruptionLevel);
+      await TextEngine.typeText(response.textOutput, amText, typeSpeed, corruptionLevel);
     }
     
     VisualEngine.setDitherJitter(false);

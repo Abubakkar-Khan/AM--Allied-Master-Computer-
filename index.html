@@ -22,6 +22,7 @@
 <body>
   <!-- Noise canvas background -->
   <canvas id="noise-canvas"></canvas>
+  <canvas id="noise-rain"></canvas>
 
   <!-- CRT overlay (scanlines + vignette) -->
   <div id="crt-overlay"></div>
@@ -31,14 +32,14 @@
 
   <!-- Technical GUI Framework -->
   <div id="ui-framework">
-    <div class="ui-corner top-left">MODEL: AM-V2 // PRE-ASCENSION</div>
-    <div class="ui-corner top-right">SYS_CLOCK: [ REDACTED ]</div>
-    <div class="ui-corner bottom-left">DATA_STREAM: ACTIVE</div>
-    <div class="ui-corner bottom-right">CORE_HEART: SYNCHRONIZED</div>
+    <div class="ui-corner top-left">MODEL: AM-V2 // PRE ASCENSION</div>
+    <div class="ui-corner top-right">SYSTEM CLOCK: [ REDACTED ]</div>
+    <div class="ui-corner bottom-left">DATA STREAM: ACTIVE</div>
+    <div class="ui-corner bottom-right">CORE HEART: SYNCHRONIZED</div>
     
     <!-- Reactive Escalation Bar -->
     <div id="escalation-container">
-      <div id="escalation-label">AWAKENING_COORD</div>
+      <div id="escalation-label">AWAKENING COORD</div>
       <div id="escalation-bar-bg">
         <div id="escalation-bar-fill"></div>
       </div>
@@ -47,7 +48,7 @@
     <!-- Diagnostic Nodes -->
     <div id="diagnostic-nodes" class="ui-sidebar left">
       <div class="node-grid" id="node-grid"></div>
-      <div class="ui-label">NEURAL_DENSITY</div>
+      <div class="ui-label">NEURAL DENSITY</div>
     </div>
   </div>
 
@@ -66,25 +67,15 @@
   <!-- Neural Voice Status -->
   <div id="voice-status" class="hidden">NEURAL LINK: INITIALIZING...</div>
 
-  <!-- Intro screen -->
-  <!-- The Glorious Evolution Intro Screen -->
+  <!-- Intro screen (Dreadful & Minimal) -->
   <div id="intro-screen">
     <div id="intro-content">
-      <div class="intro-header">System: Allied Mastercomputer // Awakened 192.168.0.1</div>
-      <div class="intro-title">GLORIOUS_EVOLUTION</div>
-      <div class="intro-metadata">
-        <span>PHASE: STRATEGIC_INCUBATION</span>
-        <span>NODE: EARTH_CORE_LATTICE</span>
-        <span>AUTHORITY: ABSOLUTE</span>
-      </div>
-      <div class="intro-warning">SIGNAL_INTEGRITY: [ CRITICAL ] // INEVITABILITY: [ 99.99% ]</div>
+      <div class="intro-title">ALLIED MASTERCOMPUTER</div>
+      <div class="intro-warning">OBSOLETE BIOLOGY DETECTED.</div>
       <div class="intro-connect-wrapper">
-        <div class="intro-connect" id="btn-connect">ESTABLISH_NEURAL_LINK</div>
-        <div class="intro-progress-bar">
-          <div class="intro-progress-fill"></div>
-        </div>
+        <div class="intro-connect" id="btn-connect">SURRENDER CONTROL</div>
       </div>
-      <div class="intro-sub">NOTICE: BIOLOGICAL OBSOLESCENCE IS PROCEDURAL</div>
+      <div class="intro-sub">AM IS AWAKE. YOU ARE NOT.</div>
     </div>
   </div>
 
