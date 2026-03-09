@@ -55,6 +55,7 @@ const VisualEngine = (() => {
     ctx = canvas.getContext('2d');
     resize();
     window.addEventListener('resize', resize);
+    initDiagnosticGrid();
   }
 
   function resize() {
@@ -171,96 +172,110 @@ const VisualEngine = (() => {
    * Flash a disturbing image briefly.
    * Uses procedurally generated canvas images.
    */
-  function flashImage(type = 'face') {
+  /**
+   * Technical GUI: Initialize diagnostic node grid
+   */
+  function initDiagnosticGrid() {
+    const grid = document.getElementById('node-grid');
+    if (!grid) return;
+    grid.innerHTML = '';
+    for (let i = 0; i < 15; i++) {
+      const node = document.createElement('div');
+      node.className = 'node';
+      if (Math.random() < 0.3) node.classList.add('blink');
+      grid.appendChild(node);
+    }
+  }
+
+  /**
+   * Technical GUI: Update escalation level (0-10)
+   */
+  function setEscalation(level) {
+    const fill = document.getElementById('escalation-bar-fill');
+    if (!fill) return;
+    const percent = Math.min(100, Math.max(5, level * 10));
+    fill.style.height = `${percent}%`;
+    
+    // Nodes react to escalation
+    const nodes = document.querySelectorAll('.node');
+    nodes.forEach((node, idx) => {
+      if (idx < level * 1.5) {
+        node.classList.add('active');
+      } else {
+        node.classList.remove('active');
+      }
+    });
+
+    // Background color shifts on extreme escalation
+    if (level >= 9) {
+      document.body.style.backgroundColor = '#100';
+    } else {
+      document.body.style.backgroundColor = '#000';
+    }
+  }
+
+  /**
+   * Keypress Glitch: Triggered on user typing
+   */
+  function triggerKeypressGlitch() {
+    const terminal = document.getElementById('terminal');
+    if (!terminal) return;
+    terminal.classList.remove('keypress-glitch');
+    void terminal.offsetWidth; // Force reflow
+    terminal.classList.add('keypress-glitch');
+  }
+
+  /**
+   * Set Dither Jitter (used when AM speaks)
+   */
+  function setDitherJitter(active) {
+    const dither = document.getElementById('dither-overlay');
+    if (!dither) return;
+    if (active) dither.classList.add('jitter');
+    else dither.classList.remove('jitter');
+  }
+
+  /**
+   * Flash a procedural disturbing image (No AI assets)
+   */
+  function flashImage(type = 'noise') {
     const overlay = document.getElementById('flash-overlay');
     const img = document.getElementById('flash-image');
     if (!overlay) return;
 
-    // Generate procedural disturbing image via canvas
     const tempCanvas = document.createElement('canvas');
     tempCanvas.width = 256;
     tempCanvas.height = 256;
     const tCtx = tempCanvas.getContext('2d');
 
-    if (type === 'face' || type === 'skull') {
-      if (Math.random() < 0.5) {
-        img.src = 'img/skull.png';
-        overlay.classList.remove('hidden');
-        AudioEngine.playStatic(0.2);
-        AudioEngine.playImpact();
-        setTimeout(() => overlay.classList.add('hidden'), 150);
-        return;
-      }
-      drawDistortedFace(tCtx, 256, 256);
-    } else if (type === 'eye') {
-      if (Math.random() < 0.5) {
-        img.src = 'img/eye.png';
-        overlay.classList.remove('hidden');
-        AudioEngine.playStatic(0.2);
-        AudioEngine.playImpact();
-        setTimeout(() => overlay.classList.add('hidden'), 150);
-        return;
-      }
-      drawStaringEye(tCtx, 256, 256);
-    } else if (type === 'hand') {
-      drawReachingHand(tCtx, 256, 256);
-    } else if (type === 'angel') {
-        // Angel is so divine we use the image directly for flash too
-        img.src = 'img/angel.png';
-        overlay.classList.remove('hidden');
-        AudioEngine.playStatic(0.15);
-        AudioEngine.playImpact();
-        setTimeout(() => overlay.classList.add('hidden'), 200);
-        return;
-    } else {
-      drawNoise(tCtx, 256, 256);
-    }
+    if (type === 'eye') drawStaringEye(tCtx, 256, 256);
+    else if (type === 'hand') drawReachingHand(tCtx, 256, 256);
+    else drawDistortedFace(tCtx, 256, 256);
 
     img.src = tempCanvas.toDataURL();
     overlay.classList.remove('hidden');
 
-    AudioEngine.playStatic(0.15);
+    AudioEngine.playStatic(0.2);
     AudioEngine.playImpact();
-
-    // Brief flash: 120-250ms
-    const flashDuration = 120 + Math.random() * 130;
-    setTimeout(() => {
-      overlay.classList.add('hidden');
-    }, flashDuration);
+    setTimeout(() => overlay.classList.add('hidden'), 150);
   }
 
-  /**
-   * Set AM's persistent manifestation (Presence)
-   * types: 'skull', 'eye', 'angel', 'none'
-   */
-  function setPresence(type = 'none') {
-    const layer = document.getElementById('presence-layer');
-    const img = document.getElementById('presence-img');
-    if (!layer || !img) return;
-
-    if (type === 'none') {
-      layer.classList.add('hidden');
-      return;
-    }
-
-    img.src = `img/${type}.png`;
-    layer.classList.remove('hidden');
-    layer.style.opacity = '0';
-    setTimeout(() => layer.style.opacity = '0.3', 10);
-  }
-
-  /**
-   * High-intensity red data glitch (Image 3/5 style)
-   */
   function triggerDataGlitch(duration = 500) {
     const overlay = document.getElementById('flash-overlay');
     const img = document.getElementById('flash-image');
     if (!overlay || !img) return;
 
-    img.src = 'img/glitch-red.png';
+    // Use noise instead of persistent image if possible, 
+    // but for now we'll stick to procedural noise generation for this
+    const tempCanvas = document.createElement('canvas');
+    tempCanvas.width = 512;
+    tempCanvas.height = 512;
+    drawNoise(tempCanvas.getContext('2d'), 512, 512);
+
+    img.src = tempCanvas.toDataURL();
     overlay.classList.remove('hidden');
     overlay.style.mixBlendMode = 'color-dodge';
-    overlay.style.filter = 'contrast(400%) grayscale(1)';
+    overlay.style.filter = 'contrast(400%) invert(1)';
 
     AudioEngine.playStatic(0.4);
 
@@ -445,7 +460,9 @@ const VisualEngine = (() => {
     setColorState,
     updateHeartbeat,
     flashImage,
-    setPresence,
-    triggerDataGlitch
+    triggerDataGlitch,
+    setEscalation,
+    triggerKeypressGlitch,
+    setDitherJitter
   };
 })();

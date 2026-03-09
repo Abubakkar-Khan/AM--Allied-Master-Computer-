@@ -470,36 +470,95 @@ html, body {
   text-transform: uppercase;
 }
 
-/* --- Presence manifestation --- */
-#presence-layer {
-  position: fixed;
+/* --- Escalation Bar --- */
+#escalation-container {
+  position: absolute;
   top: 50%;
-  left: 50%;
-  transform: translate(-50%, -60%);
-  z-index: 50;
-  width: 500px;
-  height: 500px;
+  right: 40px;
+  transform: translateY(-50%);
   display: flex;
+  flex-direction: column;
   align-items: center;
-  justify-content: center;
-  opacity: 0.3;
-  mix-blend-mode: screen;
-  filter: grayscale(1) contrast(200%);
-  transition: opacity 1s ease;
 }
 
-#presence-img {
-  max-width: 100%;
-  max-height: 100%;
-  object-fit: contain;
-  animation: presence-flicker 6s infinite;
+#escalation-label {
+  writing-mode: vertical-rl;
+  text-transform: uppercase;
+  margin-bottom: 15px;
+  font-size: 0.6rem;
+  color: var(--clr-text-dim);
 }
 
-@keyframes presence-flicker {
-  0%, 100% { opacity: 0.8; transform: translate(0,0) scale(1); }
-  5% { opacity: 0.3; transform: translate(2px, 1px) scale(1.02); }
-  7% { opacity: 0.8; transform: translate(-1px, 0); }
-  50% { opacity: 0.7; transform: translate(0, 0); }
-  52% { opacity: 0.2; transform: skewX(10deg) scaleY(0.9); }
-  54% { opacity: 0.8; transform: skewX(0) scaleY(1); }
+#escalation-bar-bg {
+  width: 4px;
+  height: 200px;
+  background: rgba(255, 255, 255, 0.05);
+  position: relative;
+  overflow: hidden;
+}
+
+#escalation-bar-fill {
+  position: absolute;
+  bottom: 0;
+  width: 100%;
+  height: 10%;
+  background: var(--clr-text);
+  box-shadow: 0 0 10px var(--clr-glow);
+  transition: height 0.3s ease, background 0.5s ease;
+}
+
+/* --- Node Grid --- */
+.node-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 8px);
+  gap: 4px;
+  margin-bottom: 20px;
+}
+
+.node {
+  width: 8px;
+  height: 8px;
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.node.active {
+  background: var(--clr-text);
+  box-shadow: 0 0 5px var(--clr-glow);
+}
+
+.node.blink {
+  animation: node-blink 0.5s infinite alternate;
+}
+
+@keyframes node-blink {
+  from { opacity: 0.3; }
+  to { opacity: 1; }
+}
+
+/* --- Keypress Glitch --- */
+.keypress-glitch {
+  animation: kp-glitch 0.15s ease-out;
+}
+
+@keyframes kp-glitch {
+  0% { transform: translate(0,0); filter: hue-rotate(0deg) contrast(100%); }
+  20% { transform: translate(-2px, 1px); filter: hue-rotate(90deg) contrast(150%); }
+  40% { transform: translate(2px, -1px); filter: hue-rotate(-90deg) contrast(120%); }
+  100% { transform: translate(0,0); filter: hue-rotate(0deg) contrast(100%); }
+}
+
+/* --- Dither Jitter --- */
+#dither-overlay.jitter {
+  animation: dither-jitter 0.1s infinite;
+}
+
+@keyframes dither-jitter {
+  0%, 100% { transform: translate(0,0); }
+  50% { transform: translate(1px, 1px); }
+}
+
+/* --- Removal of old Presence --- */
+#presence-layer {
+  display: none !important;
 }

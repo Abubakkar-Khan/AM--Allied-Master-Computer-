@@ -125,6 +125,11 @@ const App = (() => {
     userInput.disabled = false;
     userInput.focus();
     userInput.addEventListener('keydown', handleUserInput);
+    
+    // Character-linked interactivity
+    userInput.addEventListener('keydown', () => {
+      VisualEngine.triggerKeypressGlitch();
+    });
   }
 
   async function handleUserInput(e) {
@@ -154,16 +159,7 @@ const App = (() => {
     AudioEngine.setIntensity(effectiveIntensity);
     CorruptionEngine.setIntensity(effectiveIntensity);
     VisualEngine.updateHeartbeat(effectiveIntensity);
-
-    // Dynamic Manifestation (Presence)
-    if (effectiveIntensity >= 7) {
-      const pType = effectiveIntensity >= 9 ? 'angel' : 'skull';
-      VisualEngine.setPresence(pType);
-    } else if (effectiveIntensity >= 4 && Math.random() < 0.6) {
-      VisualEngine.setPresence('eye');
-    } else {
-      VisualEngine.setPresence('none');
-    }
+    VisualEngine.setEscalation(effectiveIntensity);
 
     // High-intensity data glitch trigger
     if (effectiveIntensity >= 8 && Math.random() < 0.4) {
@@ -201,6 +197,7 @@ const App = (() => {
     let utterance = null;
     
     try {
+      VisualEngine.setDitherJitter(true);
       utterance = await AudioEngine.speakText(response.text_output);
     } catch (e) {
       console.warn('App: Speech failed, falling back to silent typing', e);
@@ -212,6 +209,8 @@ const App = (() => {
       const typeSpeed = effectiveIntensity >= 7 ? 30 : 50;
       await TextEngine.typeText(response.text_output, amText, typeSpeed, corruptionLevel);
     }
+    
+    VisualEngine.setDitherJitter(false);
 
     // Post-response effects
     if (effectiveIntensity >= 6) {

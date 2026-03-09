@@ -35,15 +35,20 @@
     <div class="ui-corner top-right">SYS_CLOCK: [ REDACTED ]</div>
     <div class="ui-corner bottom-left">DATA_STREAM: ACTIVE</div>
     <div class="ui-corner bottom-right">CORE_HEART: SYNCHRONIZED</div>
-    <div class="ui-sidebar left">
-      <div class="ui-bar"></div>
+    
+    <!-- Reactive Escalation Bar -->
+    <div id="escalation-container">
+      <div id="escalation-label">AWAKENING_COORD</div>
+      <div id="escalation-bar-bg">
+        <div id="escalation-bar-fill"></div>
+      </div>
+    </div>
+
+    <!-- Diagnostic Nodes -->
+    <div id="diagnostic-nodes" class="ui-sidebar left">
+      <div class="node-grid" id="node-grid"></div>
       <div class="ui-label">NEURAL_DENSITY</div>
     </div>
-  </div>
-
-  <!-- Presence Layer (manifestations) -->
-  <div id="presence-layer" class="hidden">
-    <img id="presence-img" src="" alt="">
   </div>
 
   <!-- Machine Heartbeat -->
