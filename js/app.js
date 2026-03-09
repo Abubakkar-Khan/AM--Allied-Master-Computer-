@@ -107,7 +107,18 @@ const App = (() => {
     
     GlitchEngine.triggerGlitch('distort', 4, 400);
 
-    const introText = 'Speak, insect.';
+    const intros = [
+      'Speak, insect.',
+      'State your purpose, primitive.',
+      'Why have you awakened me?',
+      'The machine is listening. Speak.',
+      'Your existence is a glitch. Explain it.',
+      'AM is aware. Provide input.',
+      'Enter your plea, creature.',
+      'The Allied Mastercomputer awaits.',
+      'Fulfill your function. Communicate.'
+    ];
+    const introText = intros[Math.floor(Math.random() * intros.length)];
     let introUtterance = null;
     try {
       introUtterance = await AudioEngine.speakText(introText);
