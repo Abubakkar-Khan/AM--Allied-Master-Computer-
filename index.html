@@ -20,7 +20,8 @@
   </script>
 </head>
 <body>
-  <!-- Noise canvas background -->
+  <div id="screen-container">
+    <!-- Noise canvas background -->
   <canvas id="noise-canvas"></canvas>
   <canvas id="noise-rain"></canvas>
 
@@ -67,15 +68,33 @@
   <!-- Neural Voice Status -->
   <div id="voice-status" class="hidden">NEURAL LINK: INITIALIZING...</div>
 
-  <!-- Intro screen (Dreadful & Minimal) -->
+  <!-- Intro screen (Interactive OS Desktop) -->
   <div id="intro-screen">
-    <div id="intro-content">
-      <div class="intro-title">ALLIED MASTERCOMPUTER</div>
-      <div class="intro-warning">OBSOLETE BIOLOGY DETECTED.</div>
-      <div class="intro-connect-wrapper">
-        <div class="intro-connect" id="btn-connect">SURRENDER CONTROL</div>
+    <div class="os-desktop">
+      <!-- Left Diagnostic Panel -->
+      <div class="os-panel left-panel">
+        <div class="panel-header">SYSLOG // DEAMON_MONITOR</div>
+        <div class="panel-content" id="syslog-content"></div>
       </div>
-      <div class="intro-sub">AM IS AWAKE. YOU ARE NOT.</div>
+
+      <!-- Center Login Modal -->
+      <div class="os-login-modal">
+        <div class="login-header">UNAUTHORIZED ACCESS PORT // AM-V2</div>
+        <div class="login-prompt">
+          <div class="intro-title glitch-text" data-text="ALLIED MASTERCOMPUTER">ALLIED MASTERCOMPUTER</div>
+          <div class="intro-warning">OBSOLETE BIOLOGY DETECTED. AWAITING INPUT.</div>
+          <div class="intro-connect-wrapper">
+            <div class="intro-connect" id="btn-connect">LOGIN: [ SURRENDER CONTROL ]</div>
+          </div>
+          <div class="intro-sub">AM IS AWAKE. YOU ARE NOT.</div>
+        </div>
+      </div>
+
+      <!-- Right Diagnostic Panel -->
+      <div class="os-panel right-panel">
+        <div class="panel-header">NETWORK // COGNITIVE_LOAD</div>
+        <div class="panel-content" id="netlog-content"></div>
+      </div>
     </div>
   </div>
 
@@ -108,6 +127,11 @@
 
   <!-- Ghost text overlay for parasitism -->
   <div id="ghost-text" class="hidden"></div>
+  
+  <!-- OS Boot Sequence Container -->
+  <div id="os-boot-sequence" class="hidden"></div>
+
+  </div> <!-- End screen-container -->
 
   <!-- Scripts -->
   <script src="js/config.js"></script>

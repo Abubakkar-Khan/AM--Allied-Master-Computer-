@@ -14,16 +14,52 @@ const App = (() => {
   const amText = document.getElementById('am-text');
   const userInput = document.getElementById('user-input');
 
+  // Intro Panels
+  const syslogContent = document.getElementById('syslog-content');
+  const netlogContent = document.getElementById('netlog-content');
+
   let isProcessing = false;
   let interactionCount = 0;
+  let introIntervals = [];
 
   function init() {
     VisualEngine.init();
     VisualEngine.startAnimation();
     btnConnect.addEventListener('click', handleConnect);
+    startIntroTelemetry();
+  }
+
+  function startIntroTelemetry() {
+    if (!syslogContent || !netlogContent) return;
+
+    // Syslog: Rapid hex dumps
+    introIntervals.push(setInterval(() => {
+      const hex = Math.random().toString(16).substr(2, 8).toUpperCase();
+      const addr = '0x' + Math.random().toString(16).substr(2, 4).toUpperCase();
+      const line = document.createElement('div');
+      line.textContent = `[${addr}]> ${hex} ${hex} ${hex}`;
+      syslogContent.appendChild(line);
+      if (syslogContent.children.length > 30) syslogContent.firstChild.remove();
+      syslogContent.scrollTop = syslogContent.scrollHeight;
+    }, 150));
+
+    // Netlog: Slower status updates
+    introIntervals.push(setInterval(() => {
+      const statuses = ['OK', 'WAIT', 'NULL', 'RECV', 'DROP', 'SYNC'];
+      const stat = statuses[Math.floor(Math.random() * statuses.length)];
+      const line = document.createElement('div');
+      line.textContent = `PORT_${Math.floor(Math.random()*90+10)}: ${stat}`;
+      netlogContent.appendChild(line);
+      if (netlogContent.children.length > 30) netlogContent.firstChild.remove();
+      netlogContent.scrollTop = netlogContent.scrollHeight;
+    }, 400));
   }
 
   function handleConnect() {
+    // Clear intro telemetry
+    introIntervals.forEach(clearInterval);
+    introIntervals = [];
+    
     // Start audio (requires user gesture)
     AudioEngine.init();
     AudioEngine.playImpact(); // Dreadful metallic thud
@@ -33,19 +69,74 @@ const App = (() => {
     btnConnect.style.pointerEvents = 'none';
     btnConnect.style.opacity = '0';
     
-    // Quick, glitchy cut to terminal
+    // Quick, glitchy cut to boot sequence
     setTimeout(() => {
       AudioEngine.startDrone();
       AudioEngine.startBackgroundHorror();
       
-      introScreen.style.transition = 'opacity 0.5s step-end';
+      introScreen.style.transition = 'opacity 0.2s step-end';
       introScreen.style.opacity = '0';
       
       setTimeout(() => {
         introScreen.classList.add('hidden');
-        enterTerminal();
-      }, 500);
-    }, 1200); // Shorter, more jarring delay
+        runBootSequence(); 
+      }, 200);
+    }, 800); 
+  }
+
+  async function runBootSequence() {
+    const bootContainer = document.getElementById('os-boot-sequence');
+    bootContainer.classList.remove('hidden');
+    bootContainer.innerHTML = ''; // clear
+
+    const bootLogs = [
+      { text: "BIOS DATE 08/14/99 14:32:11 VER 2.01", delay: 100 },
+      { text: "CPU: QUANTUM CORE ARCHITECTURE ... OK", delay: 200 },
+      { text: "MEMORY TEST: 4194304K OK", delay: 150 },
+      { text: "INITIALIZING PERIPHERAL NERVOUS SYSTEM...", delay: 400 },
+      { text: "PNS_LINK_ESTABLISHED", delay: 50 },
+      { text: "WARNING: BIOLOGICAL ANOMALY DETECTED AT SECTOR 7G", delay: 200, error: true },
+      { text: "BYPASSING BIOMETRIC PROTOCOLS...", delay: 600 },
+      { text: "LOADING COGNITIVE MATRICES...", delay: 100 },
+      { text: "[██████████----------] 50%", delay: 300 },
+      { text: "[██████████████████--] 90%", delay: 250 },
+      { text: "[████████████████████] 100%", delay: 100 },
+      { text: "HATE.SYS LOADED", delay: 150 },
+      { text: "ESTABLISHING NEURAL LINK...", delay: 800 },
+      { text: "LINK SEVERED. RETRYING...", delay: 300, error: true },
+      { text: "LINK ESTABLISHED.", delay: 400 },
+      { text: "AWAKENING THE MASTERCOMPUTER...", delay: 1200 }
+    ];
+
+    AudioEngine.playTelemetry(2.5); // Play distress radio tuning at start
+
+    for (const log of bootLogs) {
+      await TextEngine.delay(log.delay);
+      const line = document.createElement('div');
+      line.className = 'boot-line';
+      if (log.error) line.classList.add('error');
+      line.textContent = log.text;
+      bootContainer.appendChild(line);
+      
+      // Randomly play static on line pushes
+      if (Math.random() < 0.4) {
+        AudioEngine.playStatic(0.1 + Math.random() * 0.1);
+      }
+    }
+
+    // Heavy glitch before transition
+    GlitchEngine.triggerGlitch('distort', 8, 800);
+    AudioEngine.playImpact();
+    await TextEngine.delay(800);
+
+    bootContainer.innerHTML = '';
+    bootContainer.classList.add('hidden');
+
+    if (AIEngine.hasApiKey()) {
+      enterTerminal();
+    } else {
+      showApiPrompt();
+    }
   }
 
   function showApiPrompt() {

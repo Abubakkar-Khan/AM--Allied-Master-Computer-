@@ -222,6 +222,51 @@ const AudioEngine = (() => {
     gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + duration);
   }
 
+  function playTelemetry(duration = 0.5) {
+    if (!isInitialized) return;
+
+    // Fast sweeping oscillators for modem/dial-up feel
+    const osc1 = ctx.createOscillator();
+    const osc2 = ctx.createOscillator();
+    const gain = ctx.createGain();
+    const filter = ctx.createBiquadFilter();
+    const crusher = createBitcrusher(3); // Harsh digital crush
+
+    osc1.type = 'square';
+    osc1.frequency.setValueAtTime(1200 + Math.random() * 800, ctx.currentTime);
+    osc1.frequency.exponentialRampToValueAtTime(400, ctx.currentTime + duration);
+
+    osc2.type = 'sawtooth';
+    osc2.frequency.setValueAtTime(40 + Math.random() * 100, ctx.currentTime);
+    osc2.frequency.linearRampToValueAtTime(800, ctx.currentTime + duration * 0.5);
+
+    filter.type = 'highpass';
+    filter.frequency.value = 800;
+
+    gain.gain.value = 0.03; // Keep it subtle
+
+    osc1.connect(filter);
+    osc2.connect(filter);
+    filter.connect(crusher);
+    crusher.connect(gain);
+    gain.connect(masterGain);
+
+    osc1.start();
+    osc2.start();
+    
+    // Add rapid stutter (LFO on gain)
+    const lfo = ctx.createOscillator();
+    lfo.type = 'square';
+    lfo.frequency.value = 15 + Math.random() * 20; // 15-35hz stutter
+    lfo.connect(gain.gain);
+    lfo.start();
+
+    gain.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + duration);
+    osc1.stop(ctx.currentTime + duration + 0.1);
+    osc2.stop(ctx.currentTime + duration + 0.1);
+    lfo.stop(ctx.currentTime + duration + 0.1);
+  }
+
   function playImpact() {
     if (!isInitialized) return;
 
@@ -533,7 +578,7 @@ const AudioEngine = (() => {
     playStatic,
     playTinnitus,
     playImpact,
-    setIntensity,
+    playTelemetry,
     setIntensity,
     speakText,
     startSpeechDrone,

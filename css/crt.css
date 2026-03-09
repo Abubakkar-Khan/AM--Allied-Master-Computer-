@@ -50,18 +50,36 @@
 
 /* --- Screen curvature (barrel distortion) --- */
 body {
-  perspective: 800px;
+  /* Establish 3D space for the screen curve */
+  perspective: 600px;
+  overflow: hidden;
+  background-color: #0c0a0c; /* Very dark grayish amber for screen off */
+}
+
+/* The actual "glass" of the screen */
+#screen-container {
+  position: absolute;
+  top: 0; left: 0;
+  width: 100%; height: 100%;
+  transform-style: preserve-3d;
+  /* Simulating the curve of the CRT tube */
+  transform: perspective(1000px) rotateX(1deg) rotateY(0) scale(0.98);
+  border-radius: 40px;
+  overflow: hidden;
+  box-shadow: 
+    0 0 50px rgba(0,0,0,1),
+    inset 0 0 60px rgba(0,0,0,0.8);
+  background: var(--clr-bg, #000);
 }
 
 #crt-overlay {
-  transform: perspective(800px) rotateX(0.3deg);
-  border-radius: 12px;
+  border-radius: 40px; /* Match screen container */
 }
 
-/* Subtle barrel effect via box-shadow inset */
-body::after {
+/* Heavy vignette and edge darkening via box-shadow inset */
+#screen-container::after {
   content: '';
-  position: fixed;
+  position: absolute;
   top: 0;
   left: 0;
   width: 100%;
@@ -69,9 +87,20 @@ body::after {
   z-index: 960;
   pointer-events: none;
   box-shadow:
-    inset 0 0 120px rgba(0, 0, 0, 0.7),
-    inset 0 0 40px rgba(0, 0, 0, 0.3);
-  border-radius: 14px;
+    inset 0 0 160px rgba(0, 0, 0, 0.95),
+    inset 0 0 50px rgba(0, 0, 0, 0.7);
+  border-radius: 40px;
+}
+
+/* The physical bezel mask (outer edge) */
+body::after {
+  content: '';
+  position: fixed;
+  top: 0; left: 0; width: 100vw; height: 100vh;
+  z-index: 2000;
+  pointer-events: none;
+  background: radial-gradient(circle, transparent 65%, rgba(10, 8, 5, 0.98) 120%);
+  box-shadow: inset 0 0 80px rgba(0,0,0,1);
 }
 
 /* --- Phosphor glow on text --- */
@@ -112,13 +141,13 @@ body {
 }
 
 /* --- Horizontal scan bar (slow moving bright line) --- */
-body::before {
+#screen-container::before {
   content: '';
-  position: fixed;
+  position: absolute;
   top: 0;
   left: 0;
   width: 100%;
-  height: 3px;
+  height: 4px;
   background: linear-gradient(
     to bottom,
     transparent,
@@ -127,7 +156,7 @@ body::before {
   );
   z-index: 955;
   pointer-events: none;
-  animation: scan-bar 6s linear infinite;
+  animation: scan-bar 8s linear infinite;
 }
 
 body.state-red::before {

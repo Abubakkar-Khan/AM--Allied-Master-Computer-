@@ -46,8 +46,9 @@ const VisualEngine = (() => {
 
             let r, g, b;
             if (currentState === 'void') {
-              // Melancholy (Stark white blocks on deep black)
-              r = g = b = pixelVal;
+              // Melancholy (Stark pure white blocks on deep black)
+              r = g = b = 255; // Force pure white
+              pixelVal = isDataBlock ? 255 : 0; 
             } else if (currentState === 'red') {
               // Mania / Contempt (Red)
               r = pixelVal; g = b = 0;
@@ -65,7 +66,7 @@ const VisualEngine = (() => {
             }
 
             // Alpha fading based on intensity state - much softer and lighter
-            const alpha = currentState === 'void' ? (pixelVal > 40 ? 100 : 15) : (pixelVal > 10 ? 100 : 30);
+            const alpha = currentState === 'void' ? (pixelVal > 0 ? 100 : 5) : (pixelVal > 10 ? 100 : 30);
 
             data[idx] = r; data[idx + 1] = g; data[idx + 2] = b; data[idx + 3] = alpha;
           }
@@ -101,6 +102,8 @@ const VisualEngine = (() => {
   /**
    * Technical GUI: Update atmospheric background image with Flash Glitch
    */
+  let lastImageSwapTime = 0;
+
   function updateBackground(intensity, forceHorror = false) {
     const bgLayer = document.getElementById('background-manifestation');
     if (!bgLayer) return;
@@ -110,10 +113,23 @@ const VisualEngine = (() => {
     else if (intensity >= 8) category = 'high';
     else if (intensity >= 4) category = 'medium';
 
-    // Only swap if category changed or on high-intensity
-    if (category !== currentBgCategory || (intensity >= 7 && Math.random() < 0.2)) {
+    const now = Date.now();
+    // Swap rate depends on intensity (low = 8s, high = 1s)
+    const swapInterval = Math.max(1000, 8000 - (intensity * 800));
+
+    // Swap if category changed OR enough time has passed
+    if (category !== currentBgCategory || (now - lastImageSwapTime > swapInterval)) {
       currentBgCategory = category;
-      const pool = bgImages[category];
+      lastImageSwapTime = now;
+      
+      let pool = bgImages[category];
+      
+      // 20% chance to bleed an image from a different category to ensure they all get seen
+      if (Math.random() < 0.2 && !forceHorror) {
+        const allKeys = Object.keys(bgImages);
+        pool = bgImages[allKeys[Math.floor(Math.random() * allKeys.length)]];
+      }
+      
       const img = pool[Math.floor(Math.random() * pool.length)];
       
       // INSTANT SWAP with Flash Glitch
@@ -127,7 +143,9 @@ const VisualEngine = (() => {
       bgLayer.style.opacity = category === 'horror' ? '0.22' : '0.15';
       
       bgLayer.classList.add('flash-glitch-active');
-      AudioEngine.playStatic(0.15); // Signal interruption sound
+      if (intensity > 3 && Math.random() < 0.3) {
+        AudioEngine.playStatic(0.15); // Signal interruption sound only sometimes
+      }
     }
   }
 
@@ -288,7 +306,7 @@ const VisualEngine = (() => {
       body.classList.add('state-void');
       currentState = 'void';
       // Void: Deep darkness with stark white
-      body.style.backgroundColor = '#020202'; 
+      body.style.backgroundColor = '#000000'; 
       document.documentElement.style.setProperty('--clr-text', '#ffffff');
       document.documentElement.style.setProperty('--clr-glow', 'rgba(255,255,255,0.3)');
       if (staticCanvas) {
