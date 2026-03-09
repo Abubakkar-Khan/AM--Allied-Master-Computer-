@@ -41,13 +41,15 @@ const GlitchEngine = (() => {
   function triggerDistortion(type, duration = 300) {
     const className = `distortion-${type}`;
 
-    if (type === 'shake' && currentIntensity >= 7) {
-      body.classList.add('distortion-shake-heavy');
-      setTimeout(() => body.classList.remove('distortion-shake-heavy'), duration);
-    } else {
-      body.classList.add(className);
-      setTimeout(() => body.classList.remove(className), duration);
+    if (type === 'shake') {
+      // "Instead of shaking like an idiot, we glitch"
+      VisualEngine.triggerLogicError(duration);
+      VisualEngine.triggerDataGlitch(duration);
+      return;
     }
+
+    body.classList.add(className);
+    setTimeout(() => body.classList.remove(className), duration);
   }
 
   /**

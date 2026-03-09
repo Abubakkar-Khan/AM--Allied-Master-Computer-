@@ -36,7 +36,6 @@ body.state-horror {
   --clr-glow: rgba(255, 0, 0, 0.8);
   --clr-glow-strong: #ff0000;
   background: #000 !important;
-  animation: screen-shake-violent 0.04s infinite;
   overflow: hidden;
 }
 
@@ -93,14 +92,6 @@ body.state-void {
   90% { transform: translate(-1%, 1%); }
 }
 
-@keyframes screen-shake-violent {
-  0% { transform: translate(0,0) rotate(0deg); }
-  20% { transform: translate(-4px, 3px) rotate(-1deg); }
-  40% { transform: translate(5px, -1px) rotate(1.5deg); }
-  60% { transform: translate(-1px, -5px) rotate(-0.5deg); }
-  80% { transform: translate(3px, 4px) rotate(1deg); }
-  100% { transform: translate(2px, -2px) rotate(0deg); }
-}
 
 /* --- Presence manifestation --- */
 /* --- Reset & Base --- */
@@ -632,16 +623,45 @@ html, body {
   to { opacity: 1; }
 }
 
-/* --- Keypress Glitch --- */
+/* --- Advanced Digital Glitch --- */
 .keypress-glitch {
-  animation: kp-glitch 0.15s ease-out;
+  animation: digital-snap 0.12s cubic-bezier(0.19, 1, 0.22, 1);
 }
 
-@keyframes kp-glitch {
-  0% { transform: translate(0,0); filter: hue-rotate(0deg) contrast(100%); }
-  20% { transform: translate(-2px, 1px); filter: hue-rotate(90deg) contrast(150%); }
-  40% { transform: translate(2px, -1px); filter: hue-rotate(-90deg) contrast(120%); }
-  100% { transform: translate(0,0); filter: hue-rotate(0deg) contrast(100%); }
+@keyframes digital-snap {
+  0% { transform: scale(1); filter: contrast(100%); }
+  20% { transform: scale(1.002) skewX(0.5deg); filter: contrast(150%) hue-rotate(10deg); }
+  50% { transform: scale(0.998) skewX(-0.5deg); filter: contrast(200%) brightness(1.2) saturate(0); }
+  100% { transform: scale(1) skewX(0deg); filter: contrast(100%) hue-rotate(0deg); }
+}
+
+.glitch-shred {
+  animation: glitch-shred-anim 0.4s step-end infinite;
+}
+
+@keyframes glitch-shred-anim {
+  0%, 100% { clip-path: polygon(0 0, 100% 0, 100% 100%, 0 100%); transform: translate(0,0); }
+  20% { clip-path: polygon(0 15%, 100% 15%, 100% 25%, 0 25%, 0 45%, 100% 45%, 100% 55%, 0 55%); transform: translate(-5px, 0); }
+  40% { clip-path: polygon(0 10%, 100% 10%, 100% 12%, 0 12%, 0 80%, 100% 80%, 100% 82%, 0 82%); transform: translate(5px, 0); }
+  60% { clip-path: polygon(0 40%, 100% 40%, 100% 41%, 0 41%, 0 60%, 100% 60%, 100% 61%, 0 61%); filter: invert(1); }
+  80% { clip-path: polygon(0 5%, 100% 5%, 100% 6%, 0 6%, 0 94%, 100% 94%, 100% 95%, 0 95%); transform: scaleY(1.1); }
+}
+
+/* --- Logic Error Inversion --- */
+.logic-error {
+  filter: invert(1) contrast(300%) !important;
+  background: #fff !important;
+}
+
+/* --- Flash Glitch Transition --- */
+.flash-glitch-active {
+  animation: flash-glitch-anim 0.1s step-end forwards;
+}
+
+@keyframes flash-glitch-anim {
+  0% { filter: brightness(5) contrast(500%) invert(1); opacity: 1; }
+  50% { filter: brightness(2) contrast(200%) hue-rotate(90deg); opacity: 0.8; }
+  100% { filter: none; opacity: 1; }
 }
 
 /* --- Dither Jitter --- */

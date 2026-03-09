@@ -70,7 +70,7 @@ const VisualEngine = (() => {
   let currentBgCategory = '';
 
   /**
-   * Technical GUI: Update atmospheric background image
+   * Technical GUI: Update atmospheric background image with Flash Glitch
    */
   function updateBackground(intensity, forceHorror = false) {
     const bgLayer = document.getElementById('background-manifestation');
@@ -81,23 +81,24 @@ const VisualEngine = (() => {
     else if (intensity >= 8) category = 'high';
     else if (intensity >= 4) category = 'medium';
 
-    // Only swap if category changed or on high-intensity "glitch transition"
-    if (category !== currentBgCategory || (intensity >= 7 && Math.random() < 0.15)) {
+    // Only swap if category changed or on high-intensity
+    if (category !== currentBgCategory || (intensity >= 7 && Math.random() < 0.2)) {
       currentBgCategory = category;
       const pool = bgImages[category];
       const img = pool[Math.floor(Math.random() * pool.length)];
       
-      // Professional cross-fade
-      bgLayer.style.opacity = '0';
-      bgLayer.style.filter = 'blur(10px) grayscale(1)';
+      // INSTANT SWAP with Flash Glitch
+      bgLayer.classList.remove('flash-glitch-active');
+      void bgLayer.offsetWidth; // Force reflow
       
-      setTimeout(() => {
-        bgLayer.style.backgroundImage = `url('images/${img}')`;
-        bgLayer.style.filter = category === 'horror' 
-          ? 'grayscale(1) contrast(300%) brightness(1.1) sepia(1)' 
-          : 'grayscale(1) contrast(180%) brightness(0.9)';
-        bgLayer.style.opacity = category === 'horror' ? '0.22' : '0.15';
-      }, 1200); // Slower, more deliberate transition
+      bgLayer.style.backgroundImage = `url('images/${img}')`;
+      bgLayer.style.filter = category === 'horror' 
+        ? 'grayscale(1) contrast(300%) brightness(1.1) sepia(1)' 
+        : 'grayscale(1) contrast(180%) brightness(0.9)';
+      bgLayer.style.opacity = category === 'horror' ? '0.22' : '0.15';
+      
+      bgLayer.classList.add('flash-glitch-active');
+      AudioEngine.playStatic(0.15); // Signal interruption sound
     }
   }
 
@@ -279,15 +280,27 @@ const VisualEngine = (() => {
   }
 
   /**
-   * Set global horror mode (absolute dread)
+   * Digital Shredding: Advanced data glitch overlay
    */
-  function setHorrorMode(active) {
+  function triggerDigitalGlitch(active) {
     const body = document.body;
     if (active) {
-      body.classList.add('state-horror');
+      body.classList.add('glitch-shred');
     } else {
-      body.classList.remove('state-horror');
+      body.classList.remove('glitch-shred');
     }
+  }
+
+  /**
+   * Logic Error: Momentary UI inversion
+   */
+  function triggerLogicError(duration = 200) {
+    const body = document.body;
+    body.classList.add('logic-error');
+    AudioEngine.playStatic(0.1);
+    setTimeout(() => {
+      body.classList.remove('logic-error');
+    }, duration);
   }
 
   /**
@@ -556,7 +569,8 @@ const VisualEngine = (() => {
     setEscalation,
     triggerKeypressGlitch,
     setDitherJitter,
-    setHorrorMode,
+    triggerDigitalGlitch,
+    triggerLogicError,
     triggerDreadFlash,
     updateBackground
   };

@@ -191,19 +191,20 @@ const App = (() => {
 
     // Horror States & Dread Flashes
     if (effectiveIntensity >= 9) {
-      VisualEngine.setHorrorMode(true);
+      VisualEngine.triggerDigitalGlitch(true);
       VisualEngine.triggerDreadFlash();
-      VisualEngine.updateBackground(effectiveIntensity, true); // Force horror bg
+      VisualEngine.updateBackground(effectiveIntensity, true); // Flash Glitch triggered internally
       AudioEngine.playImpact();
     } else {
-      VisualEngine.setHorrorMode(false);
+      VisualEngine.triggerDigitalGlitch(false);
       if (effectiveIntensity >= 8 && Math.random() < 0.3) {
         VisualEngine.triggerDreadFlash();
       }
     }
 
-    // High-intensity data glitch trigger
+    // High-intensity Logic Error / Data glitch
     if (effectiveIntensity >= 8 && Math.random() < 0.4) {
+      VisualEngine.triggerLogicError(300);
       VisualEngine.triggerDataGlitch(600);
     }
 
