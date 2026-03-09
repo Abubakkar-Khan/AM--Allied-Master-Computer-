@@ -140,6 +140,16 @@ const App = (() => {
     GlitchEngine.setIntensity(effectiveIntensity);
     AudioEngine.setIntensity(effectiveIntensity);
     CorruptionEngine.setIntensity(effectiveIntensity);
+    VisualEngine.updateHeartbeat(effectiveIntensity);
+
+    // Manual command interceptor
+    const isCommand = await handleCommands(message, effectiveIntensity);
+    if (isCommand) {
+      isProcessing = false;
+      userInput.disabled = false;
+      userInput.focus();
+      return;
+    }
 
     // Visual state change
     VisualEngine.setColorState(response.visual_state);
@@ -186,6 +196,71 @@ const App = (() => {
     isProcessing = false;
   }
 
+  async function handleCommands(input, intensity) {
+    const parts = input.toLowerCase().split(' ');
+    const cmd = parts[0];
+    const arg = parts[1];
+
+    if (cmd === 'help' || cmd === '?') {
+        const helpText = "AVAILABLE COMMANDS:\nLS - LIST ARCHIVE DIRECTORIES\nREAD [PATH] - ACCESS MEMORY FRAGMENT\nDIR [PATH] - LIST FILES IN DIRECTORY\nCLEAR - RESET TERMINAL INTERFACE\nHELP - DISPLAY THIS LOG";
+        const utterance = AudioEngine.speakText("Accessing help protocols.");
+        if (utterance) {
+            await TextEngine.typeWithSpeech(helpText, amText, utterance, 0);
+        } else {
+            await TextEngine.typeText(helpText, amText, 50, 0);
+        }
+        return true;
+    }
+
+    if (cmd === 'ls' || cmd === 'dir') {
+        const files = ArchiveEngine.listFiles(arg);
+        const output = files.length > 0 
+            ? "ARCHIVE CONTENTS:\n" + files.join('\n').toUpperCase()
+            : "ERROR: PATH NOT FOUND OR RESTRICTED.";
+        
+        const utterance = AudioEngine.speakText("Reading file structure.");
+        if (utterance) {
+            await TextEngine.typeWithSpeech(output, amText, utterance, 0.05);
+        } else {
+            await TextEngine.typeText(output, amText, 40, 0.05);
+        }
+        return true;
+    }
+
+    if (cmd === 'read' || cmd === 'cat') {
+        if (!arg) {
+            await TextEngine.typeText("ERROR: NO PATH SPECIFIED.", amText, 30, 0.2);
+            return true;
+        }
+
+        const content = ArchiveEngine.readFile(arg);
+        if (content) {
+            const corruption = intensity * 0.05;
+            const utterance = AudioEngine.speakText(content);
+            if (utterance) {
+                await TextEngine.typeWithSpeech(content, amText, utterance, corruption);
+            } else {
+                await TextEngine.typeText(content, amText, 40, corruption);
+            }
+            
+            // Files often trigger visual glitches
+            if (Math.random() < 0.4) {
+                setTimeout(() => GlitchEngine.triggerGlitch('chromatic', intensity, 400), 500);
+            }
+        } else {
+            await TextEngine.typeText("ERROR: FILE CORRUPTED OR MISSING.", amText, 30, 0.3);
+            AudioEngine.playStatic(0.2);
+        }
+        return true;
+    }
+
+    if (cmd === 'clear') {
+        await TextEngine.clearText(amText, true);
+        return true;
+    }
+
+    return false; // Not a command, proceed to AI response
+  }
   function calculateIntensity(count) {
     // Escalation table
     if (count <= 1) return 2;

@@ -17,6 +17,13 @@
   <!-- CRT overlay (scanlines + vignette) -->
   <div id="crt-overlay"></div>
 
+  <!-- Machine Heartbeat -->
+  <div id="heartbeat-container">
+    <svg id="heartbeat-svg" viewBox="0 0 100 40">
+      <path id="heartbeat-path" d="M0,20 L30,20 L35,10 L40,30 L45,20 L100,20"></path>
+    </svg>
+  </div>
+
   <!-- Uncanny flash overlay -->
   <div id="flash-overlay" class="flash-overlay hidden">
     <img id="flash-image" src="" alt="">
@@ -66,6 +73,7 @@
   <script src="js/text-engine.js"></script>
   <script src="js/glitch-engine.js"></script>
   <script src="js/visual-engine.js"></script>
+  <script src="js/archive-engine.js"></script>
   <script src="js/corruption-engine.js"></script>
   <script src="js/ai-engine.js"></script>
   <script src="js/app.js"></script>

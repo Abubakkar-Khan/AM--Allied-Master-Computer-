@@ -331,6 +331,44 @@ html, body {
   white-space: pre;
 }
 
+/* --- Heartbeat Monitor --- */
+#heartbeat-container {
+  position: fixed;
+  top: 30px;
+  right: 40px;
+  width: 120px;
+  height: 50px;
+  z-index: 200;
+  opacity: 0.6;
+  pointer-events: none;
+  filter: drop-shadow(0 0 5px var(--clr-glow));
+  transition: opacity 0.5s, filter 0.5s;
+}
+
+#heartbeat-svg {
+  width: 100%;
+  height: 100%;
+}
+
+#heartbeat-path {
+  fill: none;
+  stroke: var(--clr-text);
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-dasharray: 200;
+  stroke-dashoffset: 200;
+  animation: pulse-path 2s linear infinite;
+}
+
+@keyframes pulse-path {
+  0% { stroke-dashoffset: 200; }
+  10% { stroke-dashoffset: 160; }
+  20% { stroke-dashoffset: 100; }
+  30% { stroke-dashoffset: 60; }
+  100% { stroke-dashoffset: -200; }
+}
+
 /* --- Utility --- */
 .hidden {
   display: none !important;

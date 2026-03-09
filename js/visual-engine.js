@@ -205,6 +205,26 @@ const VisualEngine = (() => {
     }, flashDuration);
   }
 
+  /**
+   * Update the speed and intensity of the heartbeat pulse.
+   */
+  function updateHeartbeat(intensity) {
+    const path = document.getElementById('heartbeat-path');
+    if (!path) return;
+
+    // Base speed is 2s, goes down to 0.4s at max intensity
+    const duration = Math.max(0.4, 2.2 - (intensity * 0.18));
+    path.style.animationDuration = `${duration}s`;
+
+    // Glow intensity
+    const container = document.getElementById('heartbeat-container');
+    if (container) {
+      const glow = Math.min(15, 5 + intensity);
+      container.style.filter = `drop-shadow(0 0 ${glow}px var(--clr-glow-strong))`;
+      container.style.opacity = String(0.4 + intensity * 0.06);
+    }
+  }
+
   // --- Procedural image generation ---
 
   function drawDistortedFace(tCtx, w, h) {
@@ -357,6 +377,7 @@ const VisualEngine = (() => {
     startAnimation,
     stopAnimation,
     setColorState,
+    updateHeartbeat,
     flashImage
   };
 })();
