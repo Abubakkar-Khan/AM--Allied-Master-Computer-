@@ -1,0 +1,154 @@
+/* =========================================
+   PROJECT AM — CRT TERMINAL SIMULATION
+   ========================================= */
+
+/* --- CRT Overlay (scanlines + vignette + flicker) --- */
+#crt-overlay {
+  position: fixed;
+  top: -2px;
+  left: -2px;
+  right: -2px;
+  bottom: -2px;
+  z-index: 950;
+  pointer-events: none;
+  overflow: hidden;
+}
+
+/* Scanlines */
+#crt-overlay::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: repeating-linear-gradient(
+    to bottom,
+    transparent 0px,
+    transparent 2px,
+    rgba(0, 0, 0, var(--scanline-opacity)) 2px,
+    rgba(0, 0, 0, var(--scanline-opacity)) 4px
+  );
+  animation: scanline-scroll 8s linear infinite;
+}
+
+/* Vignette */
+#crt-overlay::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: radial-gradient(
+    ellipse at center,
+    transparent 50%,
+    rgba(0, 0, 0, 0.4) 80%,
+    rgba(0, 0, 0, 0.85) 100%
+  );
+}
+
+/* --- Screen curvature (barrel distortion) --- */
+body {
+  perspective: 800px;
+}
+
+#crt-overlay {
+  transform: perspective(800px) rotateX(0.3deg);
+  border-radius: 12px;
+}
+
+/* Subtle barrel effect via box-shadow inset */
+body::after {
+  content: '';
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 960;
+  pointer-events: none;
+  box-shadow:
+    inset 0 0 120px rgba(0, 0, 0, 0.7),
+    inset 0 0 40px rgba(0, 0, 0, 0.3);
+  border-radius: 14px;
+}
+
+/* --- Phosphor glow on text --- */
+#am-text,
+.prompt-char,
+#user-input,
+.intro-am {
+  text-shadow:
+    0 0 2px var(--clr-text),
+    0 0 5px var(--clr-glow),
+    0 0 15px var(--clr-glow),
+    0 0 30px var(--clr-glow);
+}
+
+/* --- Brightness flicker --- */
+body {
+  animation: crt-flicker 4s ease-in-out infinite;
+}
+
+@keyframes crt-flicker {
+  0% { filter: brightness(1); }
+  3% { filter: brightness(0.92); }
+  6% { filter: brightness(1.02); }
+  9% { filter: brightness(0.97); }
+  12% { filter: brightness(1); }
+  70% { filter: brightness(1); }
+  72% { filter: brightness(0.88); }
+  74% { filter: brightness(1.05); }
+  76% { filter: brightness(0.93); }
+  78% { filter: brightness(1); }
+  100% { filter: brightness(1); }
+}
+
+/* --- Scanline scroll animation --- */
+@keyframes scanline-scroll {
+  0% { transform: translateY(0); }
+  100% { transform: translateY(4px); }
+}
+
+/* --- Horizontal scan bar (slow moving bright line) --- */
+body::before {
+  content: '';
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 3px;
+  background: linear-gradient(
+    to bottom,
+    transparent,
+    rgba(0, 255, 65, 0.04),
+    transparent
+  );
+  z-index: 955;
+  pointer-events: none;
+  animation: scan-bar 6s linear infinite;
+}
+
+body.state-red::before {
+  background: linear-gradient(
+    to bottom,
+    transparent,
+    rgba(255, 26, 26, 0.04),
+    transparent
+  );
+}
+
+body.state-void::before {
+  background: linear-gradient(
+    to bottom,
+    transparent,
+    rgba(26, 26, 26, 0.02),
+    transparent
+  );
+}
+
+@keyframes scan-bar {
+  0% { top: -5px; }
+  100% { top: 100%; }
+}
