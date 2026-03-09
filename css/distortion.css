@@ -99,22 +99,22 @@
   }
 }
 
-/* --- Interlace corruption --- */
+/* --- Interlace corruption (Chromatic) --- */
 .distortion-interlace #terminal-output {
   background-image: repeating-linear-gradient(
     to bottom,
     transparent 0px,
-    transparent 1px,
-    rgba(0, 0, 0, 0.3) 1px,
-    rgba(0, 0, 0, 0.3) 2px
+    transparent 2px,
+    rgba(0, 255, 255, 0.05) 2px,
+    rgba(255, 0, 255, 0.05) 4px
   );
-  background-size: 100% 2px;
+  background-size: 100% 4px;
   animation: interlace-drift 0.5s steps(2) infinite;
 }
 
 @keyframes interlace-drift {
   0% { background-position: 0 0; }
-  50% { background-position: 0 1px; }
+  50% { background-position: 0 2px; }
   100% { background-position: 0 0; }
 }
 

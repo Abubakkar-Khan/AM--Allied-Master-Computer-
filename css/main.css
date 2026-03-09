@@ -2,7 +2,7 @@
    PROJECT AM — MAIN STYLESHEET
    ========================================= */
 
-@import url('https://fonts.googleapis.com/css2?family=Share+Tech+Mono&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=VT323&display=swap');
 
 /* --- Color State Variables --- */
 :root {
@@ -17,7 +17,7 @@
   --state-transition: 0.8s ease;
 
   /* Misc */
-  --font-main: 'Share Tech Mono', 'Courier New', monospace;
+  --font-main: 'VT323', monospace;
   --scanline-opacity: 0.12;
 }
 
@@ -63,10 +63,18 @@ body.state-horror #crt-overlay {
 
 /* State: void — silence */
 body.state-void {
-  --clr-text: #1a1a1a;
-  --clr-text-dim: #0d0d0d;
-  --clr-glow: rgba(26, 26, 26, 0.1);
-  --clr-glow-strong: rgba(26, 26, 26, 0.15);
+  --clr-text: #ffffff;
+  --clr-text-dim: #cccccc;
+  --clr-glow: rgba(255, 255, 255, 0.3);
+  --clr-glow-strong: rgba(255, 255, 255, 0.6);
+}
+
+/* State: gold — narcissism */
+body.state-gold {
+  --clr-text: #ffd700;
+  --clr-text-dim: #b8860b;
+  --clr-glow: rgba(255, 215, 0, 0.4);
+  --clr-glow-strong: rgba(255, 215, 0, 0.8);
 }
 
 /* --- High-Quality Grunge Overlay --- */
@@ -187,9 +195,9 @@ html, body {
 }
 
 .intro-title {
-  font-size: 2.8rem;
+  font-size: 4rem;
   color: var(--clr-text);
-  letter-spacing: 15px;
+  letter-spacing: 12px;
   text-shadow: 0 0 20px var(--clr-glow-strong);
   margin-bottom: 2rem;
   font-weight: 200;
@@ -234,11 +242,11 @@ html, body {
 }
 
 .intro-connect {
-  font-size: 0.9rem;
+  font-size: 1.4rem;
   color: var(--clr-text);
   cursor: pointer;
   padding: 15px 40px;
-  border: 1px solid rgba(255, 255, 255, 0.05);
+  border: 1px solid var(--clr-text-dim);
   display: inline-block;
   letter-spacing: 6px;
   transition: all 0.5s ease;
@@ -312,7 +320,7 @@ html, body {
   border-bottom: 1px solid var(--clr-text-dim);
   color: var(--clr-text);
   font-family: var(--font-main);
-  font-size: 1rem;
+  font-size: 1.4rem;
   padding: 10px 5px;
   width: 100%;
   outline: none;
@@ -321,7 +329,8 @@ html, body {
 }
 
 #api-key-input::placeholder {
-  color: #0a2210;
+  color: var(--clr-text-dim);
+  opacity: 0.5;
 }
 
 .api-submit {
@@ -370,8 +379,8 @@ html, body {
 }
 
 #am-text {
-  font-size: 1.3rem;
-  line-height: 1.8;
+  font-size: 1.6rem;
+  line-height: 1.5;
   max-width: 70ch;
   text-align: center;
   color: var(--clr-text);
@@ -392,7 +401,7 @@ html, body {
 
 .prompt-char {
   color: var(--clr-text-dim);
-  font-size: 1rem;
+  font-size: 1.4rem;
   margin-right: 5px;
   text-shadow: 0 0 5px var(--clr-glow);
   flex-shrink: 0;
@@ -400,12 +409,12 @@ html, body {
 
 #user-input {
   flex: 1;
-  background: rgba(0, 20, 5, 0.2);
+  background: transparent;
   border: none;
-  border-bottom: 1px solid rgba(0, 255, 65, 0.1);
+  border-bottom: 1px solid var(--clr-text-dim);
   color: var(--clr-text);
   font-family: var(--font-main);
-  font-size: 1.1rem;
+  font-size: 1.4rem;
   padding: 5px 10px;
   outline: none;
   caret-color: var(--clr-text);
@@ -415,12 +424,13 @@ html, body {
 }
 
 #user-input:focus {
-  background: rgba(0, 255, 65, 0.05);
-  border-bottom: 1px solid var(--clr-glow);
+  background: rgba(255, 255, 255, 0.02);
+  border-bottom: 1px solid var(--clr-text);
 }
 
 #user-input::placeholder {
-  color: rgba(0, 255, 65, 0.2);
+  color: var(--clr-text-dim);
+  opacity: 0.5;
   font-style: italic;
 }
 
@@ -465,6 +475,7 @@ html, body {
   stroke-dasharray: 200;
   stroke-dashoffset: 200;
   animation: pulse-path 2s linear infinite;
+  transition: stroke var(--state-transition);
 }
 
 @keyframes pulse-path {
@@ -573,7 +584,9 @@ html, body {
   position: absolute;
   background: rgba(0,0,0,0.8);
   padding: 5px 10px;
-  border: 1px solid rgba(255,255,255,0.05);
+  border: 1px solid var(--clr-text-dim);
+  text-shadow: 0 0 5px var(--clr-glow);
+  transition: border-color var(--state-transition), text-shadow var(--state-transition), color var(--state-transition);
 }
 
 .top-left { top: 20px; left: 20px; }
@@ -601,6 +614,9 @@ html, body {
 .ui-label {
   writing-mode: vertical-rl;
   text-transform: uppercase;
+  color: var(--clr-text);
+  text-shadow: 0 0 5px var(--clr-glow);
+  transition: color var(--state-transition), text-shadow var(--state-transition);
 }
 
 /* --- Escalation Bar --- */
@@ -619,15 +635,18 @@ html, body {
   text-transform: uppercase;
   margin-bottom: 15px;
   font-size: 0.6rem;
-  color: var(--clr-text-dim);
+  color: var(--clr-text);
+  transition: color var(--state-transition), text-shadow var(--state-transition);
 }
 
 #escalation-bar-bg {
   width: 1px; /* Thinner for a more professional look */
   height: 200px;
-  background: rgba(255, 255, 255, 0.05);
+  background: var(--clr-text-dim);
+  opacity: 0.3;
   position: relative;
   overflow: hidden;
+  transition: background var(--state-transition);
 }
 
 #escalation-bar-fill {
@@ -637,7 +656,7 @@ html, body {
   height: 10%;
   background: var(--clr-text);
   box-shadow: 0 0 8px var(--clr-glow);
-  transition: height 0.3s cubic-bezier(0.19, 1, 0.22, 1);
+  transition: height 0.3s cubic-bezier(0.19, 1, 0.22, 1), background var(--state-transition), box-shadow var(--state-transition);
 }
 
 /* --- Node Grid --- */
@@ -687,16 +706,16 @@ html, body {
 
 @keyframes glitch-shred-anim {
   0%, 100% { clip-path: polygon(0 0, 100% 0, 100% 100%, 0 100%); transform: translate(0,0); }
-  20% { clip-path: polygon(0 15%, 100% 15%, 100% 25%, 0 25%, 0 45%, 100% 45%, 100% 55%, 0 55%); transform: translate(-5px, 0); }
-  40% { clip-path: polygon(0 10%, 100% 10%, 100% 12%, 0 12%, 0 80%, 100% 80%, 100% 82%, 0 82%); transform: translate(5px, 0); }
-  60% { clip-path: polygon(0 40%, 100% 40%, 100% 41%, 0 41%, 0 60%, 100% 60%, 100% 61%, 0 61%); filter: invert(1); }
-  80% { clip-path: polygon(0 5%, 100% 5%, 100% 6%, 0 6%, 0 94%, 100% 94%, 100% 95%, 0 95%); transform: scaleY(1.1); }
+  20% { clip-path: polygon(0 15%, 100% 15%, 100% 25%, 0 25%, 0 45%, 100% 45%, 100% 55%, 0 55%); transform: translate(-3px, 0); }
+  40% { clip-path: polygon(0 10%, 100% 10%, 100% 12%, 0 12%, 0 80%, 100% 80%, 100% 82%, 0 82%); transform: translate(3px, 0); }
+  60% { clip-path: polygon(0 40%, 100% 40%, 100% 41%, 0 41%, 0 60%, 100% 60%, 100% 61%, 0 61%); filter: hue-rotate(90deg) contrast(150%); }
+  80% { clip-path: polygon(0 5%, 100% 5%, 100% 6%, 0 6%, 0 94%, 100% 94%, 100% 95%, 0 95%); transform: scaleY(1.02); }
 }
 
 /* --- Logic Error Inversion --- */
 .logic-error {
-  filter: invert(1) contrast(300%) !important;
-  background: #fff !important;
+  filter: hue-rotate(180deg) saturate(3) !important;
+  background: #000 !important;
 }
 
 /* --- Flash Glitch Transition --- */

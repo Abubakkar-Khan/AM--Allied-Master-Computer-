@@ -20,35 +20,58 @@ const VisualEngine = (() => {
     return (h & 0x7fffffff) / 0x7fffffff;
   }
 
-  // Smooth noise interpolation
-  function smoothNoise(x, y, seed) {
-    const ix = Math.floor(x);
-    const iy = Math.floor(y);
-    const fx = x - ix;
-    const fy = y - iy;
+  // Mathematical Generative Noise (Non-Organic)
+  // Replaces FBM with structured data blocks and linear static
+  function generateStructuralNoise(w, h, data, timeOffset) {
+    const blockSizeX = 4 + Math.floor(Math.abs(Math.sin(timeOffset)) * 16);
+    const blockSizeY = 2 + Math.floor(Math.abs(Math.cos(timeOffset * 0.5)) * 8);
+    
+    // Base static intensity shifts - reduced visibility
+    const baseVal = Math.random() * 5;
 
-    const a = hash(ix, iy, seed);
-    const b = hash(ix + 1, iy, seed);
-    const c = hash(ix, iy + 1, seed);
-    const d = hash(ix + 1, iy + 1, seed);
+    for (let y = 0; y < h; y += blockSizeY) {
+      for (let x = 0; x < w; x += blockSizeX) {
+        // block-level calculation for brutalist digital feel
+        let isDataBlock = (hash(x, y, Math.floor(timeOffset * 10)) > 0.85);
+        let blockBrightness = isDataBlock ? (15 + Math.random() * 35) : baseVal;
 
-    const ux = fx * fx * (3 - 2 * fx);
-    const uy = fy * fy * (3 - 2 * fy);
+        // Draw block
+        for (let by = 0; by < blockSizeY && y + by < h; by++) {
+          for (let bx = 0; bx < blockSizeX && x + bx < w; bx++) {
+            const idx = ((y + by) * w + (x + bx)) * 4;
+            
+            // Introduce micro-static within blocks
+            let pixelVal = blockBrightness;
+            if (Math.random() < 0.1) pixelVal = Math.random() * 80;
 
-    return a + (b - a) * ux + (c - a) * uy + (a - b - c + d) * ux * uy;
-  }
+            let r, g, b;
+            if (currentState === 'void') {
+              // Melancholy (Stark white blocks on deep black)
+              r = g = b = pixelVal;
+            } else if (currentState === 'red') {
+              // Mania / Contempt (Red)
+              r = pixelVal; g = b = 0;
+            } else if (currentState === 'glitch') {
+              // Dissonance (Erratic chromatic colors)
+              r = Math.random() > 0.5 ? pixelVal * 2 : 0;
+              g = pixelVal * 0.5;
+              b = Math.random() > 0.5 ? pixelVal * 2 : 0;
+            } else if (currentState === 'gold') {
+              // Narcissism (Gold/Yellow)
+              r = pixelVal * 2; g = pixelVal * 1.5; b = 0;
+            } else {
+              // Observation (Green base)
+              r = 0; g = pixelVal; b = 0;
+            }
 
-  // Fractal noise
-  function fbm(x, y, seed) {
-    let value = 0;
-    let amplitude = 0.5;
-    let frequency = 1;
-    for (let i = 0; i < 4; i++) {
-      value += amplitude * smoothNoise(x * frequency, y * frequency, seed + i * 100);
-      amplitude *= 0.5;
-      frequency *= 2;
+            // Alpha fading based on intensity state - much softer and lighter
+            const alpha = currentState === 'void' ? (pixelVal > 40 ? 100 : 15) : (pixelVal > 10 ? 100 : 30);
+
+            data[idx] = r; data[idx + 1] = g; data[idx + 2] = b; data[idx + 3] = alpha;
+          }
+        }
+      }
     }
-    return value;
   }
 
   function init() {
@@ -65,12 +88,12 @@ const VisualEngine = (() => {
     updateBackground(0); // Initial low intensity background
   }
 
-  // Horror Image Categories
+  // Horror Image Categories (Expanded to use all images)
   const bgImages = {
-    low: ['AM1.jpg', 'am10.jpg', 'am4.jpg', 'face.jpg'],
-    medium: ['eye1.jpg', 'eye2.jpg', 'eye3.jpg', 'eye4.jpg', 'am2.jpg', 'am6.jpg'],
-    high: ['am7.jpg', 'am8.jpg', 'am9.jpg', 'teeth1.jpg', 'hand.jpg', 'am5.jpg'],
-    horror: ['am3.jpg', 'am7.jpg', 'teeth1.jpg']
+    low: ['AM1.jpg', 'am10.jpg', 'am4.jpg', 'face.jpg', 'am2.jpg'],
+    medium: ['eye1.jpg', 'eye2.jpg', 'eye3.jpg', 'eye4.jpg', 'am6.jpg', 'am8.jpg'],
+    high: ['am7.jpg', 'am9.jpg', 'teeth1.jpg', 'hand.jpg', 'am5.jpg', 'am3.jpg'],
+    horror: ['am3.jpg', 'am7.jpg', 'teeth1.jpg', 'hand.jpg', 'face.jpg']
   };
 
   let currentBgCategory = '';
@@ -129,7 +152,7 @@ const VisualEngine = (() => {
     
     // Transparent clear for clinical void, dark for others
     if (currentState === 'void') {
-      staticCtx.fillStyle = 'rgba(230, 230, 230, 0.15)';
+      staticCtx.fillStyle = 'rgba(0, 0, 0, 0.2)'; // Deep black
     } else {
       staticCtx.fillStyle = 'rgba(0, 0, 0, 0.15)';
     }
@@ -149,36 +172,60 @@ const VisualEngine = (() => {
       const alpha = 0.1 + Math.random() * 0.2 * intensityFactor;
       
       if (currentState === 'void') {
-        staticCtx.fillStyle = `rgba(40, 40, 45, ${alpha * 2})`; // Dark grit on light
+        staticCtx.fillStyle = `rgba(255, 255, 255, ${alpha * 0.5})`; // White grit on black
       } else if (currentState === 'red') {
         staticCtx.fillStyle = `rgba(255, 10, 10, ${alpha})`;
+      } else if (currentState === 'glitch') {
+        staticCtx.fillStyle = Math.random() > 0.5 ? `rgba(0, 255, 255, ${alpha})` : `rgba(255, 0, 255, ${alpha})`; // Cyan/Magenta
+      } else if (currentState === 'gold') {
+        staticCtx.fillStyle = `rgba(255, 215, 0, ${alpha * 0.8})`; // Golden hue
       } else {
         staticCtx.fillStyle = `rgba(0, 255, 65, ${alpha})`;
       }
       staticCtx.fillRect(gX, gY, gW, gH);
     }
 
-    // 2. Bit-Crushed Logic Bursts
+    // 2. Localized Data Corruption (Replaces full-width lines)
     if (Math.random() < 0.15 + intensityFactor * 0.3) {
+      // Create a localized cluster of noise instead of a screen-wide line
+      const burstX = Math.floor(Math.random() * w);
       const burstY = Math.floor(Math.random() * h);
-      const burstH = 2 + Math.floor(Math.random() * 10);
-      const burstW = w;
+      const burstW = 10 + Math.floor(Math.random() * 100);
+      const burstH = 2 + Math.floor(Math.random() * 20);
       
+      // Ensure we don't draw outside canvas bounds
+      const drawX = Math.min(burstX, w - burstW);
+      const drawY = Math.min(burstY, h - burstH);
+
       const burstData = staticCtx.createImageData(burstW, burstH);
       for (let i = 0; i < burstData.data.length; i += 4) {
-        // High contrast binary noise
-        const val = Math.random() > 0.5 ? 255 : 0;
+        // High contrast scattered binary noise
+        const val = Math.random() > 0.4 ? 255 : 0;
+        
         if (currentState === 'void') {
           burstData.data[i] = burstData.data[i+1] = burstData.data[i+2] = 20; // Dark burst
-          burstData.data[i + 3] = 30;
+          burstData.data[i + 3] = val > 0 ? 30 : 0;
+        } else if (currentState === 'glitch') {
+          // Chromatic aberration clusters (Cyan / Magenta)
+          burstData.data[i] = Math.random() > 0.5 ? val : 0; // Red channel
+          burstData.data[i + 1] = Math.random() > 0.5 ? val : 0; // Green channel
+          burstData.data[i + 2] = val; // Always some blue
+          burstData.data[i + 3] = val > 0 ? 40 : 0;
+        } else if (currentState === 'gold') {
+          // Stable, perfect golden bands
+          burstData.data[i] = val; 
+          burstData.data[i + 1] = val > 0 ? 215 : 0;
+          burstData.data[i + 2] = 0;
+          burstData.data[i + 3] = val > 0 ? 60 : 0;
         } else {
+          // Standard / Red states
           burstData.data[i] = currentState === 'red' ? val : 0;
           burstData.data[i + 1] = currentState === 'red' ? 0 : val;
           burstData.data[i + 2] = 0;
-          burstData.data[i + 3] = 60;
+          burstData.data[i + 3] = val > 0 ? 40 : 0;
         }
       }
-      staticCtx.putImageData(burstData, 0, burstY);
+      staticCtx.putImageData(burstData, drawX, drawY);
     }
   }
 
@@ -186,37 +233,16 @@ const VisualEngine = (() => {
     if (animFrameId) return;
 
     function render() {
-      // 1. Base Procedural Noise (Now bit-crushed)
-      time += 0.005; 
+      // 1. Base Generative Structural Noise
+      // Speed scales with intensity. Void state is much slower.
+      const timeStep = currentState === 'void' ? 0.001 : 0.005 + (currentIntensity * 0.001);
+      time += timeStep; 
+      
       const w = canvas.width;
       const h = canvas.height;
       const data = noiseData.data;
-      const noiseScale = 0.05; // Sharper scale
 
-      for (let y = 0; y < h; y++) {
-        for (let x = 0; x < w; x++) {
-          const idx = (y * w + x) * 4;
-          let n = fbm(x * noiseScale + time, y * noiseScale, 42);
-          // Hard threshold for "digital" look
-          n = n > 0.5 ? 1 : 0;
-          
-          if (Math.random() < 0.05) n = Math.random();
-          const brightness = n * 50;
-
-          let r, g, b;
-          if (currentState === 'void') {
-            r = g = b = 200 + brightness; // Light grey base
-          } else if (currentState === 'red') {
-            r = brightness + 10; g = b = 0;
-          } else if (currentState === 'void-old') { // deprecated
-             r = g = Math.floor(brightness * 0.2); b = Math.floor(brightness * 0.25);
-          } else {
-            r = 0; g = brightness + 5; b = 0;
-          }
-
-          data[idx] = r; data[idx + 1] = g; data[idx + 2] = b; data[idx + 3] = 255;
-        }
-      }
+      generateStructuralNoise(w, h, data, time);
       ctx.putImageData(noiseData, 0, 0);
 
       // 2. Digital Grit Static
@@ -261,26 +287,36 @@ const VisualEngine = (() => {
     } else if (state === 'void') {
       body.classList.add('state-void');
       currentState = 'void';
-      // Clinical Void: Sterile bright environment
-      body.style.backgroundColor = '#e0e0e0'; 
-      document.documentElement.style.setProperty('--clr-text', '#111');
-      document.documentElement.style.setProperty('--clr-glow', 'rgba(0,0,0,0.1)');
+      // Void: Deep darkness with stark white
+      body.style.backgroundColor = '#020202'; 
+      document.documentElement.style.setProperty('--clr-text', '#ffffff');
+      document.documentElement.style.setProperty('--clr-glow', 'rgba(255,255,255,0.3)');
       if (staticCanvas) {
-        staticCanvas.style.opacity = '0.35';
-        staticCanvas.style.mixBlendMode = 'multiply';
+        staticCanvas.style.opacity = '0.2';
+        staticCanvas.style.mixBlendMode = 'screen';
       }
     } else if (state === 'glitch') {
-      let count = 0;
-      const flicker = setInterval(() => {
-        if (count > 8) {
-          clearInterval(flicker);
-          setColorState('green');
-          return;
-        }
-        const s = Math.random() < 0.5 ? 'red' : 'void';
-        setColorState(s);
-        count++;
-      }, 80);
+      body.classList.add('state-glitch');
+      currentState = 'glitch';
+      // Chromatic Aberration / Dissonance look
+      body.style.backgroundColor = '#050005';
+      document.documentElement.style.setProperty('--clr-text', '#00ffff');
+      document.documentElement.style.setProperty('--clr-glow', 'rgba(255,0,255,0.6)');
+      if (staticCanvas) {
+        staticCanvas.style.opacity = '0.2';
+        staticCanvas.style.mixBlendMode = 'screen';
+      }
+    } else if (state === 'gold') {
+      body.classList.add('state-gold');
+      currentState = 'gold';
+      // Narcissism / Divine Look
+      body.style.backgroundColor = '#0a0a00';
+      document.documentElement.style.setProperty('--clr-text', '#ffd700');
+      document.documentElement.style.setProperty('--clr-glow', 'rgba(255,215,0,0.4)');
+      if (staticCanvas) {
+        staticCanvas.style.opacity = '0.25';
+        staticCanvas.style.mixBlendMode = 'screen';
+      }
     } else {
       currentState = 'green';
       body.style.backgroundColor = '#000';
