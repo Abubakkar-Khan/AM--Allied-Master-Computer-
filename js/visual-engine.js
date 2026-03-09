@@ -81,18 +81,23 @@ const VisualEngine = (() => {
     else if (intensity >= 8) category = 'high';
     else if (intensity >= 4) category = 'medium';
 
-    // Only swap if category changed or on high-intensity "glitch"
-    if (category !== currentBgCategory || (intensity >= 7 && Math.random() < 0.2)) {
+    // Only swap if category changed or on high-intensity "glitch transition"
+    if (category !== currentBgCategory || (intensity >= 7 && Math.random() < 0.15)) {
       currentBgCategory = category;
       const pool = bgImages[category];
       const img = pool[Math.floor(Math.random() * pool.length)];
       
-      // Fade out, swap, fade in
+      // Professional cross-fade
       bgLayer.style.opacity = '0';
+      bgLayer.style.filter = 'blur(10px) grayscale(1)';
+      
       setTimeout(() => {
         bgLayer.style.backgroundImage = `url('images/${img}')`;
-        bgLayer.style.opacity = category === 'horror' ? '0.25' : '0.12';
-      }, 500);
+        bgLayer.style.filter = category === 'horror' 
+          ? 'grayscale(1) contrast(300%) brightness(1.1) sepia(1)' 
+          : 'grayscale(1) contrast(180%) brightness(0.9)';
+        bgLayer.style.opacity = category === 'horror' ? '0.22' : '0.15';
+      }, 1200); // Slower, more deliberate transition
     }
   }
 
@@ -278,13 +283,10 @@ const VisualEngine = (() => {
    */
   function setHorrorMode(active) {
     const body = document.body;
-    const readouts = document.getElementById('threat-readouts');
     if (active) {
       body.classList.add('state-horror');
-      if (readouts) readouts.classList.remove('hidden');
     } else {
       body.classList.remove('state-horror');
-      if (readouts) readouts.classList.add('hidden');
     }
   }
 

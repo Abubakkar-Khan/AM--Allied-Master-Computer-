@@ -69,35 +69,28 @@ body.state-void {
   --clr-glow-strong: rgba(26, 26, 26, 0.15);
 }
 
-/* --- Threat Readouts --- */
-#threat-readouts {
+/* --- High-Quality Grunge Overlay --- */
+#grunge-overlay {
   position: fixed;
   top: 0;
   left: 0;
-  width: 100%;
-  height: 100%;
+  width: 100vw;
+  height: 100vh;
+  z-index: 1001; /* Above all */
   pointer-events: none;
-  z-index: 600;
-  font-family: var(--font-main);
+  opacity: 0.15;
+  background-image: url("https://www.transparenttextures.com/patterns/carbon-fibre.png"); /* Using a textured grain pattern */
+  mix-blend-mode: overlay;
+  animation: grunge-grain 0.2s infinite;
 }
 
-.threat-label {
-  position: absolute;
-  color: var(--clr-red);
-  font-size: 0.8rem;
-  font-weight: bold;
-  letter-spacing: 5px;
-  text-shadow: 0 0 10px #ff0000;
-  animation: pulse-threat 0.2s infinite;
-}
-
-.threat-label.top { top: 15%; left: 50%; transform: translateX(-50%); }
-.threat-label.bottom { bottom: 15%; left: 50%; transform: translateX(-50%); }
-.threat-label.center { top: 50%; left: 50%; transform: translate(-50%, -50%); font-size: 2rem; opacity: 0.1; }
-
-@keyframes pulse-threat {
-  0%, 100% { opacity: 0.8; transform: translate(-50%, 0) scale(1); }
-  50% { opacity: 1; transform: translate(-50%, -2px) scale(1.05); }
+@keyframes grunge-grain {
+  0%, 100% { transform: translate(0,0); }
+  10% { transform: translate(-1%, -1%); }
+  30% { transform: translate(1%, 1%); }
+  50% { transform: translate(-0.5%, 0.5%); }
+  70% { transform: translate(0.5%, -0.5%); }
+  90% { transform: translate(-1%, 1%); }
 }
 
 @keyframes screen-shake-violent {
@@ -563,7 +556,7 @@ html, body {
 }
 
 #escalation-bar-bg {
-  width: 4px;
+  width: 1px; /* Thinner for a more professional look */
   height: 200px;
   background: rgba(255, 255, 255, 0.05);
   position: relative;
@@ -576,8 +569,8 @@ html, body {
   width: 100%;
   height: 10%;
   background: var(--clr-text);
-  box-shadow: 0 0 10px var(--clr-glow);
-  transition: height 0.3s ease, background 0.5s ease;
+  box-shadow: 0 0 8px var(--clr-glow);
+  transition: height 0.3s cubic-bezier(0.19, 1, 0.22, 1);
 }
 
 /* --- Node Grid --- */
@@ -642,31 +635,31 @@ html, body {
   left: 0;
   width: 100%;
   height: 100%;
-  z-index: -1; /* Behind everything but above noise if needed */
+  z-index: -2; /* Deepest layer */
   pointer-events: none;
   background-size: contain;
   background-repeat: no-repeat;
   background-position: center;
   opacity: 0.15;
-  filter: grayscale(1) contrast(200%) brightness(0.8);
-  transition: opacity 2s ease, filter 2s ease, background-image 2s ease-in-out;
-  mix-blend-mode: screen;
-  animation: bg-breathing 15s infinite ease-in-out;
+  filter: grayscale(1) contrast(180%) brightness(0.9);
+  transition: opacity 2.5s ease, filter 2.5s ease, background-image 2.5s ease-in-out;
+  mix-blend-mode: luminosity; /* More professional blending than screen/multiply */
+  animation: bg-breathing 20s infinite ease-in-out;
 }
 
 @keyframes bg-breathing {
-  0%, 100% { transform: scale(1); opacity: 0.08; }
-  50% { transform: scale(1.05); opacity: 0.15; }
+  0%, 100% { transform: scale(1) translate(0,0); opacity: 0.1; }
+  50% { transform: scale(1.02) translate(1px, -1px); opacity: 0.18; }
 }
 
 body.state-horror #background-manifestation {
-  opacity: 0.25;
-  filter: grayscale(1) contrast(400%) brightness(0.8) sepia(1) hue-rotate(-50deg);
-  mix-blend-mode: screen;
-  animation: bg-breathing-violent 4s infinite ease-in-out;
+  opacity: 0.22;
+  filter: grayscale(1) contrast(300%) brightness(1.1) sepia(1) hue-rotate(-50deg);
+  mix-blend-mode: hard-light;
+  animation: bg-breathing-violent 5s infinite ease-in-out;
 }
 
 @keyframes bg-breathing-violent {
-  0%, 100% { transform: scale(1.05); }
-  50% { transform: scale(1.15); }
+  0%, 100% { transform: scale(1.02); }
+  50% { transform: scale(1.08); }
 }
