@@ -155,6 +155,21 @@ const App = (() => {
     CorruptionEngine.setIntensity(effectiveIntensity);
     VisualEngine.updateHeartbeat(effectiveIntensity);
 
+    // Dynamic Manifestation (Presence)
+    if (effectiveIntensity >= 7) {
+      const pType = effectiveIntensity >= 9 ? 'angel' : 'skull';
+      VisualEngine.setPresence(pType);
+    } else if (effectiveIntensity >= 4 && Math.random() < 0.6) {
+      VisualEngine.setPresence('eye');
+    } else {
+      VisualEngine.setPresence('none');
+    }
+
+    // High-intensity data glitch trigger
+    if (effectiveIntensity >= 8 && Math.random() < 0.4) {
+      VisualEngine.triggerDataGlitch(600);
+    }
+
     // Manual command interceptor
     const isCommand = await handleCommands(message, effectiveIntensity);
     if (isCommand) {
@@ -174,9 +189,11 @@ const App = (() => {
     if (effectiveIntensity >= 7) {
       AudioEngine.playStatic(0.4);
       AudioEngine.playImpact();
+      if (Math.random() < 0.3) VisualEngine.triggerDataGlitch(200);
     }
     if (effectiveIntensity >= 9) {
       AudioEngine.playTinnitus(2);
+      VisualEngine.triggerDataGlitch(1000);
     }
 
     // Type AM's response in sync with speech

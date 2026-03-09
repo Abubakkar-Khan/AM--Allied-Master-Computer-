@@ -183,11 +183,35 @@ const VisualEngine = (() => {
     const tCtx = tempCanvas.getContext('2d');
 
     if (type === 'face' || type === 'skull') {
+      if (Math.random() < 0.5) {
+        img.src = 'img/skull.png';
+        overlay.classList.remove('hidden');
+        AudioEngine.playStatic(0.2);
+        AudioEngine.playImpact();
+        setTimeout(() => overlay.classList.add('hidden'), 150);
+        return;
+      }
       drawDistortedFace(tCtx, 256, 256);
     } else if (type === 'eye') {
+      if (Math.random() < 0.5) {
+        img.src = 'img/eye.png';
+        overlay.classList.remove('hidden');
+        AudioEngine.playStatic(0.2);
+        AudioEngine.playImpact();
+        setTimeout(() => overlay.classList.add('hidden'), 150);
+        return;
+      }
       drawStaringEye(tCtx, 256, 256);
     } else if (type === 'hand') {
       drawReachingHand(tCtx, 256, 256);
+    } else if (type === 'angel') {
+        // Angel is so divine we use the image directly for flash too
+        img.src = 'img/angel.png';
+        overlay.classList.remove('hidden');
+        AudioEngine.playStatic(0.15);
+        AudioEngine.playImpact();
+        setTimeout(() => overlay.classList.add('hidden'), 200);
+        return;
     } else {
       drawNoise(tCtx, 256, 256);
     }
@@ -203,6 +227,48 @@ const VisualEngine = (() => {
     setTimeout(() => {
       overlay.classList.add('hidden');
     }, flashDuration);
+  }
+
+  /**
+   * Set AM's persistent manifestation (Presence)
+   * types: 'skull', 'eye', 'angel', 'none'
+   */
+  function setPresence(type = 'none') {
+    const layer = document.getElementById('presence-layer');
+    const img = document.getElementById('presence-img');
+    if (!layer || !img) return;
+
+    if (type === 'none') {
+      layer.classList.add('hidden');
+      return;
+    }
+
+    img.src = `img/${type}.png`;
+    layer.classList.remove('hidden');
+    layer.style.opacity = '0';
+    setTimeout(() => layer.style.opacity = '0.3', 10);
+  }
+
+  /**
+   * High-intensity red data glitch (Image 3/5 style)
+   */
+  function triggerDataGlitch(duration = 500) {
+    const overlay = document.getElementById('flash-overlay');
+    const img = document.getElementById('flash-image');
+    if (!overlay || !img) return;
+
+    img.src = 'img/glitch-red.png';
+    overlay.classList.remove('hidden');
+    overlay.style.mixBlendMode = 'color-dodge';
+    overlay.style.filter = 'contrast(400%) grayscale(1)';
+
+    AudioEngine.playStatic(0.4);
+
+    setTimeout(() => {
+      overlay.classList.add('hidden');
+      overlay.style.mixBlendMode = 'screen';
+      overlay.style.filter = 'none';
+    }, duration);
   }
 
   /**
@@ -378,6 +444,8 @@ const VisualEngine = (() => {
     stopAnimation,
     setColorState,
     updateHeartbeat,
-    flashImage
+    flashImage,
+    setPresence,
+    triggerDataGlitch
   };
 })();
