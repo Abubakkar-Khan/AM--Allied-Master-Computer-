@@ -644,12 +644,13 @@ html, body {
   height: 100%;
   z-index: -1; /* Behind everything but above noise if needed */
   pointer-events: none;
-  background-size: cover;
+  background-size: contain;
+  background-repeat: no-repeat;
   background-position: center;
-  opacity: 0.12;
-  filter: grayscale(1) contrast(250%) brightness(0.6);
+  opacity: 0.15;
+  filter: grayscale(1) contrast(200%) brightness(0.8);
   transition: opacity 2s ease, filter 2s ease, background-image 2s ease-in-out;
-  mix-blend-mode: multiply;
+  mix-blend-mode: screen;
   animation: bg-breathing 15s infinite ease-in-out;
 }
 
