@@ -9,6 +9,15 @@
   <link rel="stylesheet" href="css/crt.css">
   <link rel="stylesheet" href="css/glitch.css">
   <link rel="stylesheet" href="css/distortion.css">
+  <!-- Kokoro TTS engine -->
+  <script type="importmap">
+    {
+      "imports": {
+        "kokoro-js": "https://cdn.jsdelivr.net/npm/kokoro-js@1.1.0/dist/index.js",
+        "@xenova/transformers": "https://cdn.jsdelivr.net/npm/@xenova/transformers@2.17.2"
+      }
+    }
+  </script>
 </head>
 <body>
   <!-- Noise canvas background -->
@@ -28,6 +37,9 @@
   <div id="flash-overlay" class="flash-overlay hidden">
     <img id="flash-image" src="" alt="">
   </div>
+
+  <!-- Neural Voice Status -->
+  <div id="voice-status" class="hidden">NEURAL LINK: INITIALIZING...</div>
 
   <!-- Intro screen -->
   <div id="intro-screen">

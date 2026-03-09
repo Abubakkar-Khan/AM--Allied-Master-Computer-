@@ -11,11 +11,16 @@ const AudioEngine = (() => {
   let isInitialized = false;
   let currentIntensity = 1;
 
+  // AI Voice (Kokoro)
+  let kokoro = null;
+  let voiceModel = null;
+  let isKokoroReady = false;
+
   // Speech-related nodes
   let speechDroneOsc = null;
   let speechDroneGain = null;
 
-  function init() {
+  async function init() {
     if (isInitialized) return;
     try {
       ctx = new (window.AudioContext || window.webkitAudioContext)();
@@ -23,8 +28,38 @@ const AudioEngine = (() => {
       masterGain.gain.value = 0.6;
       masterGain.connect(ctx.destination);
       isInitialized = true;
+      
+      // Lazily initialize Kokoro
+      initKokoro();
     } catch (e) {
       console.warn('AudioEngine: Web Audio API not available');
+    }
+  }
+
+  async function initKokoro() {
+    const statusEl = document.getElementById('voice-status');
+    if (statusEl) statusEl.classList.remove('hidden');
+
+    try {
+      // Dynamic import of the Kokoro library
+      const { KokoroTTS } = await import('kokoro-js');
+      
+      // Use the lightest version for browser speed (v1.0 is ~30MB)
+      kokoro = await KokoroTTS.from_pretrained("onnx-community/Kokoro-82M-v1.0-ONNX", {
+        dtype: "q8", // 8-bit quantization for performance
+        device: "wasm"
+      });
+      
+      isKokoroReady = true;
+      if (statusEl) {
+        statusEl.textContent = 'NEURAL LINK: SYNCHRONIZED';
+        setTimeout(() => statusEl.classList.add('hidden'), 2000);
+      }
+      console.log('AudioEngine: Kokoro AI Voice ready');
+    } catch (e) {
+      console.error('AudioEngine: Failed to load Kokoro TTS:', e);
+      if (statusEl) statusEl.textContent = 'NEURAL LINK: FALLBACK ACTIVE';
+      setTimeout(() => statusEl.classList.add('hidden'), 3000);
     }
   }
 
@@ -183,43 +218,102 @@ const AudioEngine = (() => {
   }
 
   /**
-   * Speak AM's text using Web Speech API — low, menacing voice with weight.
+   * Speak AM's text using Kokoro AI (realistic) with Web Speech fallback.
    */
-  function speakText(text) {
-    if (!('speechSynthesis' in window)) return null;
+  async function speakText(text) {
+    if (!isInitialized) return null;
 
-    // Cancel any ongoing speech
+    // AI Voice Path
+    if (isKokoroReady && kokoro) {
+      try {
+        startSpeechDrone();
+        
+        // Use "am_adam" or "bm_lewis" for deep, realistic male voices
+        const audio = await kokoro.generate(text, {
+          voice: "am_adam",
+          speed: 0.8
+        });
+
+        // The audio object contains .audio (Float32Array) and .sampling_rate
+        const buffer = ctx.createBuffer(1, audio.audio.length, audio.sampling_rate);
+        buffer.getChannelData(0).set(audio.audio);
+
+        const source = ctx.createBufferSource();
+        source.buffer = buffer;
+        source.connect(masterGain);
+        
+        // Fake utterance object for TextEngine compatibility
+        const fakeUtterance = {
+          onstart: null,
+          onend: null,
+          onerror: null,
+          addEventListener: (name, cb) => {
+            // We'll simulate boundary events based on words
+            if (name === 'boundary') simulateBoundaries(text, audio.audio.length / audio.sampling_rate, cb);
+          }
+        };
+
+        source.onended = () => {
+          stopSpeechDrone();
+          if (fakeUtterance.onend) fakeUtterance.onend();
+        };
+
+        source.start();
+        if (fakeUtterance.onstart) fakeUtterance.onstart();
+        
+        return fakeUtterance;
+      } catch (err) {
+        console.warn('AudioEngine: Kokoro generation failed, falling back:', err);
+      }
+    }
+
+    // Fallback to legacy Web Speech API
+    return speakTextLegacy(text);
+  }
+
+  function speakTextLegacy(text) {
+    if (!('speechSynthesis' in window)) return null;
     window.speechSynthesis.cancel();
     stopSpeechDrone();
 
     const utterance = new SpeechSynthesisUtterance(text);
-    
-    // Deep, slow, robotic
     utterance.rate = 0.65;
     utterance.pitch = 0.05;
     utterance.volume = 1.0;
 
-    // Try to pick a deep/male voice
     const voices = window.speechSynthesis.getVoices();
     const preferred = voices.find(v =>
       /male|david|daniel|james|mark|google uk|microsoft edge/i.test(v.name) && !/female/i.test(v.name)
     );
     if (preferred) utterance.voice = preferred;
 
-    utterance.onstart = () => {
-      startSpeechDrone();
-    };
-
-    utterance.onend = () => {
-      stopSpeechDrone();
-    };
-
-    utterance.onerror = () => {
-      stopSpeechDrone();
-    };
+    utterance.onstart = () => startSpeechDrone();
+    utterance.onend = () => stopSpeechDrone();
+    utterance.onerror = () => stopSpeechDrone();
 
     window.speechSynthesis.speak(utterance);
     return utterance;
+  }
+
+  /**
+   * Simulate word boundary events for AI buffer audio.
+   */
+  function simulateBoundaries(text, duration, callback) {
+    const words = text.split(/\s+/);
+    const timePerChar = duration / text.length;
+    let charIndex = 0;
+
+    words.forEach((word) => {
+      const delay = charIndex * timePerChar * 1000;
+      setTimeout(() => {
+        callback({
+          name: 'word',
+          charIndex: charIndex,
+          charLength: word.length
+        });
+      }, delay);
+      charIndex += word.length + 1; // +1 for space
+    });
   }
 
   /**
