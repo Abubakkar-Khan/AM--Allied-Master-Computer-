@@ -161,6 +161,18 @@ const App = (() => {
     VisualEngine.updateHeartbeat(effectiveIntensity);
     VisualEngine.setEscalation(effectiveIntensity);
 
+    // Horror States & Dread Flashes
+    if (effectiveIntensity >= 9) {
+      VisualEngine.setHorrorMode(true);
+      VisualEngine.triggerDreadFlash();
+      AudioEngine.playImpact();
+    } else {
+      VisualEngine.setHorrorMode(false);
+      if (effectiveIntensity >= 8 && Math.random() < 0.3) {
+        VisualEngine.triggerDreadFlash();
+      }
+    }
+
     // High-intensity data glitch trigger
     if (effectiveIntensity >= 8 && Math.random() < 0.4) {
       VisualEngine.triggerDataGlitch(600);
@@ -186,6 +198,7 @@ const App = (() => {
       AudioEngine.playStatic(0.4);
       AudioEngine.playImpact();
       if (Math.random() < 0.3) VisualEngine.triggerDataGlitch(200);
+      if (effectiveIntensity >= 9) VisualEngine.triggerDreadFlash();
     }
     if (effectiveIntensity >= 9) {
       AudioEngine.playTinnitus(2);

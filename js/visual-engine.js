@@ -236,8 +236,60 @@ const VisualEngine = (() => {
   }
 
   /**
-   * Flash a procedural disturbing image (No AI assets)
+   * Set global horror mode (absolute dread)
    */
+  function setHorrorMode(active) {
+    const body = document.body;
+    const readouts = document.getElementById('threat-readouts');
+    if (active) {
+      body.classList.add('state-horror');
+      if (readouts) readouts.classList.remove('hidden');
+    } else {
+      body.classList.remove('state-horror');
+      if (readouts) readouts.classList.add('hidden');
+    }
+  }
+
+  /**
+   * Subliminal Dread Flash: Rapid sequence of procedural scares
+   */
+  function triggerDreadFlash() {
+    const overlay = document.getElementById('flash-overlay');
+    const img = document.getElementById('flash-image');
+    if (!overlay || !img) return;
+
+    let flashCount = 0;
+    const flashInterval = setInterval(() => {
+      if (flashCount > 4) {
+        clearInterval(flashInterval);
+        overlay.classList.add('hidden');
+        overlay.style.backgroundColor = 'rgba(0,0,0,0.85)';
+        overlay.style.filter = 'none';
+        return;
+      }
+
+      // Procedural scare
+      const tempCanvas = document.createElement('canvas');
+      tempCanvas.width = 128;
+      tempCanvas.height = 128;
+      const tCtx = tempCanvas.getContext('2d');
+      
+      const r = Math.random();
+      if (r < 0.3) drawDistortedFace(tCtx, 128, 128);
+      else if (r < 0.6) drawStaringEye(tCtx, 128, 128);
+      else drawNoise(tCtx, 128, 128);
+
+      img.src = tempCanvas.toDataURL();
+      overlay.classList.remove('hidden');
+      overlay.style.backgroundColor = Math.random() < 0.5 ? '#fff' : '#000';
+      overlay.style.filter = `invert(${Math.random() < 0.5 ? 1 : 0}) contrast(500%)`;
+
+      AudioEngine.playStatic(0.1);
+      
+      flashCount++;
+    }, 40); // Extremely fast (subliminal)
+  }
+
   function flashImage(type = 'noise') {
     const overlay = document.getElementById('flash-overlay');
     const img = document.getElementById('flash-image');
@@ -463,6 +515,8 @@ const VisualEngine = (() => {
     triggerDataGlitch,
     setEscalation,
     triggerKeypressGlitch,
-    setDitherJitter
+    setDitherJitter,
+    setHorrorMode,
+    triggerDreadFlash
   };
 })();
