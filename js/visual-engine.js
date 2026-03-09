@@ -56,6 +56,44 @@ const VisualEngine = (() => {
     resize();
     window.addEventListener('resize', resize);
     initDiagnosticGrid();
+    updateBackground(0); // Initial low-intensity background
+  }
+
+  // Horror Image Categories
+  const bgImages = {
+    low: ['AM1.jpg', 'am10.jpg', 'am4.jpg', 'face.jpg'],
+    medium: ['eye1.jpg', 'eye2.jpg', 'eye3.jpg', 'eye4.jpg', 'am2.jpg', 'am6.jpg'],
+    high: ['am7.jpg', 'am8.jpg', 'am9.jpg', 'teeth1.jpg', 'hand.jpg', 'am5.jpg'],
+    horror: ['am3.jpg', 'am7.jpg', 'teeth1.jpg']
+  };
+
+  let currentBgCategory = '';
+
+  /**
+   * Technical GUI: Update atmospheric background image
+   */
+  function updateBackground(intensity, forceHorror = false) {
+    const bgLayer = document.getElementById('background-manifestation');
+    if (!bgLayer) return;
+
+    let category = 'low';
+    if (forceHorror) category = 'horror';
+    else if (intensity >= 8) category = 'high';
+    else if (intensity >= 4) category = 'medium';
+
+    // Only swap if category changed or on high-intensity "glitch"
+    if (category !== currentBgCategory || (intensity >= 7 && Math.random() < 0.2)) {
+      currentBgCategory = category;
+      const pool = bgImages[category];
+      const img = pool[Math.floor(Math.random() * pool.length)];
+      
+      // Fade out, swap, fade in
+      bgLayer.style.opacity = '0';
+      setTimeout(() => {
+        bgLayer.style.backgroundImage = `url('images/${img}')`;
+        bgLayer.style.opacity = category === 'horror' ? '0.25' : '0.12';
+      }, 500);
+    }
   }
 
   function resize() {
@@ -517,6 +555,7 @@ const VisualEngine = (() => {
     triggerKeypressGlitch,
     setDitherJitter,
     setHorrorMode,
-    triggerDreadFlash
+    triggerDreadFlash,
+    updateBackground
   };
 })();

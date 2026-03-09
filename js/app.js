@@ -171,11 +171,13 @@ const App = (() => {
     CorruptionEngine.setIntensity(effectiveIntensity);
     VisualEngine.updateHeartbeat(effectiveIntensity);
     VisualEngine.setEscalation(effectiveIntensity);
+    VisualEngine.updateBackground(effectiveIntensity);
 
     // Horror States & Dread Flashes
     if (effectiveIntensity >= 9) {
       VisualEngine.setHorrorMode(true);
       VisualEngine.triggerDreadFlash();
+      VisualEngine.updateBackground(effectiveIntensity, true); // Force horror bg
       AudioEngine.playImpact();
     } else {
       VisualEngine.setHorrorMode(false);
