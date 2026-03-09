@@ -11,6 +11,10 @@ const AudioEngine = (() => {
   let isInitialized = false;
   let currentIntensity = 1;
 
+  // Speech-related nodes
+  let speechDroneOsc = null;
+  let speechDroneGain = null;
+
   function init() {
     if (isInitialized) return;
     try {
@@ -179,27 +183,92 @@ const AudioEngine = (() => {
   }
 
   /**
-   * Speak AM's text using Web Speech API — low, menacing voice.
+   * Speak AM's text using Web Speech API — low, menacing voice with weight.
    */
   function speakText(text) {
-    if (!('speechSynthesis' in window)) return;
+    if (!('speechSynthesis' in window)) return null;
 
     // Cancel any ongoing speech
     window.speechSynthesis.cancel();
+    stopSpeechDrone();
 
     const utterance = new SpeechSynthesisUtterance(text);
-    utterance.rate = 0.75;
-    utterance.pitch = 0.1;
-    utterance.volume = 0.9;
+    
+    // Deep, slow, robotic
+    utterance.rate = 0.65;
+    utterance.pitch = 0.05;
+    utterance.volume = 1.0;
 
     // Try to pick a deep/male voice
     const voices = window.speechSynthesis.getVoices();
     const preferred = voices.find(v =>
-      /male|david|daniel|james|mark|google uk/i.test(v.name) && !/female/i.test(v.name)
+      /male|david|daniel|james|mark|google uk|microsoft edge/i.test(v.name) && !/female/i.test(v.name)
     );
     if (preferred) utterance.voice = preferred;
 
+    utterance.onstart = () => {
+      startSpeechDrone();
+    };
+
+    utterance.onend = () => {
+      stopSpeechDrone();
+    };
+
+    utterance.onerror = () => {
+      stopSpeechDrone();
+    };
+
     window.speechSynthesis.speak(utterance);
+    return utterance;
+  }
+
+  /**
+   * Heavy low-frequency vibration that plays during speech for "weight".
+   */
+  function startSpeechDrone() {
+    if (!isInitialized) return;
+    
+    // Create a sub-harmonic "mass"
+    speechDroneOsc = ctx.createOscillator();
+    speechDroneGain = ctx.createGain();
+    const filter = ctx.createBiquadFilter();
+
+    speechDroneOsc.type = 'sawtooth';
+    speechDroneOsc.frequency.value = 35; // Very low rumble
+
+    filter.type = 'lowpass';
+    filter.frequency.value = 60;
+    filter.Q.value = 10; // Resonant peak
+
+    speechDroneGain.gain.value = 0;
+    
+    speechDroneOsc.connect(filter);
+    filter.connect(speechDroneGain);
+    speechDroneGain.connect(masterGain);
+
+    speechDroneOsc.start();
+    speechDroneGain.gain.linearRampToValueAtTime(0.4, ctx.currentTime + 0.1);
+
+    // Slow jitter to make it feel unstable
+    const jitter = ctx.createOscillator();
+    const jitterGain = ctx.createGain();
+    jitter.type = 'sine';
+    jitter.frequency.value = 3; 
+    jitterGain.gain.value = 2;
+    jitter.connect(jitterGain);
+    jitterGain.connect(speechDroneOsc.frequency);
+    jitter.start();
+  }
+
+  function stopSpeechDrone() {
+    if (speechDroneGain) {
+      const g = speechDroneGain;
+      g.gain.linearRampToValueAtTime(0, ctx.currentTime + 0.3);
+      setTimeout(() => {
+        try { speechDroneOsc.stop(); } catch(e) {}
+        speechDroneGain = null;
+      }, 400);
+    }
   }
 
   /**
@@ -310,7 +379,10 @@ const AudioEngine = (() => {
     playTinnitus,
     playImpact,
     setIntensity,
+    setIntensity,
     speakText,
+    startSpeechDrone,
+    stopSpeechDrone,
     startBackgroundHorror
   };
 })();

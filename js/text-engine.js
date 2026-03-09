@@ -117,6 +117,78 @@ const TextEngine = (() => {
   }
 
   /**
+   * Type text in sync with a SpeechSynthesisUtterance.
+   * Uses 'boundary' events to stay perfectly in step with the spoken words.
+   */
+  async function typeWithSpeech(text, element, utterance, corruptionLevel = 0) {
+    if (abortController) abortController.abort();
+    abortController = new AbortController();
+    const signal = abortController.signal;
+
+    isTyping = true;
+    currentElement = element;
+    element.textContent = '';
+
+    let lastIndex = 0;
+    let isFinished = false;
+
+    // Boundary event gives us the character index the speech is currently at
+    utterance.addEventListener('boundary', async (event) => {
+      if (signal.aborted || isFinished) return;
+      
+      if (event.name === 'word') {
+        const currentIndex = event.charIndex + event.charLength;
+        const chunk = text.slice(lastIndex, currentIndex);
+        
+        // Type the chunk character by character (quickly)
+        for (const char of chunk) {
+          if (signal.aborted) return;
+          
+          // Small chance of corruption during sync
+          if (corruptionLevel > 0 && Math.random() < corruptionLevel * 0.1) {
+            const sym = corruptChars[Math.floor(Math.random() * corruptChars.length)];
+            element.textContent += sym;
+            await delay(10, signal);
+            element.textContent = element.textContent.slice(0, -1) + char;
+          } else {
+            element.textContent += char;
+          }
+          AudioEngine.playTick();
+          await delay(Math.random() * 5 + 5, signal);
+        }
+        lastIndex = currentIndex;
+      }
+    });
+
+    return new Promise((resolve) => {
+      utterance.onend = () => {
+        // Ensure the rest of the text is typed if speech finished slightly early
+        if (!signal.aborted && lastIndex < text.length) {
+          element.textContent += text.slice(lastIndex);
+        }
+        isFinished = true;
+        isTyping = false;
+        resolve();
+      };
+      
+      // Fallback if boundary events don't fire (some browsers/voices)
+      setTimeout(async () => {
+        if (!isFinished && lastIndex === 0 && !signal.aborted) {
+          console.warn('TextEngine: Falling back to timed typing (no boundary events)');
+          await typeText(text, element, 60, corruptionLevel);
+          resolve();
+        }
+      }, 500);
+
+      utterance.onerror = () => {
+        isFinished = true;
+        isTyping = false;
+        resolve();
+      };
+    });
+  }
+
+  /**
    * Instantly render text (for ghost text / parasitism)
    */
   function setText(text, element) {
@@ -168,6 +240,7 @@ const TextEngine = (() => {
 
   return {
     typeText,
+    typeWithSpeech,
     setText,
     clearText,
     abort,

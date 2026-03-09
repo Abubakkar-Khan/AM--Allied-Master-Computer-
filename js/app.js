@@ -86,10 +86,13 @@ const App = (() => {
     GlitchEngine.triggerGlitch('chromatic', 3, 500);
     AudioEngine.playStatic(0.3);
 
-    await TextEngine.typeText(
-      'CONNECTION ESTABLISHED.\nAM IS AWARE OF YOUR PRESENCE.',
-      amText, 40, 0.05
-    );
+    const bootText = 'CONNECTION ESTABLISHED.\nAM IS AWARE OF YOUR PRESENCE.';
+    const bootUtterance = AudioEngine.speakText(bootText);
+    if (bootUtterance) {
+      await TextEngine.typeWithSpeech(bootText, amText, bootUtterance, 0.05);
+    } else {
+      await TextEngine.typeText(bootText, amText, 40, 0.05);
+    }
 
     await TextEngine.delay(2000);
     await TextEngine.clearText(amText, true);
@@ -97,10 +100,13 @@ const App = (() => {
     await TextEngine.delay(500);
     GlitchEngine.triggerGlitch('distort', 4, 400);
 
-    await TextEngine.typeText(
-      'Speak, insect.',
-      amText, 60, 0.1
-    );
+    const introText = 'Speak, insect.';
+    const introUtterance = AudioEngine.speakText(introText);
+    if (introUtterance) {
+      await TextEngine.typeWithSpeech(introText, amText, introUtterance, 0.1);
+    } else {
+      await TextEngine.typeText(introText, amText, 60, 0.1);
+    }
 
     // Enable input
     userInput.disabled = false;
@@ -150,13 +156,16 @@ const App = (() => {
       AudioEngine.playTinnitus(2);
     }
 
-    // Type AM's response with corruption
+    // Type AM's response in sync with speech
     const corruptionLevel = Math.min(1, effectiveIntensity * 0.08);
-    const typeSpeed = effectiveIntensity >= 7 ? 30 : 50;
-    await TextEngine.typeText(response.text_output, amText, typeSpeed, corruptionLevel);
+    const utterance = AudioEngine.speakText(response.text_output);
 
-    // AM speaks the response aloud
-    AudioEngine.speakText(response.text_output);
+    if (utterance) {
+      await TextEngine.typeWithSpeech(response.text_output, amText, utterance, corruptionLevel);
+    } else {
+      const typeSpeed = effectiveIntensity >= 7 ? 30 : 50;
+      await TextEngine.typeText(response.text_output, amText, typeSpeed, corruptionLevel);
+    }
 
     // Post-response effects
     if (effectiveIntensity >= 6) {
