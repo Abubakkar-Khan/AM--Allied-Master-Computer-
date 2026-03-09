@@ -244,17 +244,23 @@ const AudioEngine = (() => {
         
         // Fake utterance object for TextEngine compatibility
         const fakeUtterance = {
+          _onend: null,
+          _finished: false,
+          set onend(cb) {
+            this._onend = cb;
+            if (this._finished && cb) cb();
+          },
+          get onend() { return this._onend; },
           onstart: null,
-          onend: null,
           onerror: null,
           addEventListener: (name, cb) => {
-            // We'll simulate boundary events based on words
             if (name === 'boundary') simulateBoundaries(text, audio.audio.length / audio.sampling_rate, cb);
           }
         };
 
         source.onended = () => {
           stopSpeechDrone();
+          fakeUtterance._finished = true;
           if (fakeUtterance.onend) fakeUtterance.onend();
         };
 

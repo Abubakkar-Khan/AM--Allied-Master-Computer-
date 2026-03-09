@@ -303,19 +303,28 @@ html, body {
 
 #user-input {
   flex: 1;
-  background: transparent;
+  background: rgba(0, 20, 5, 0.2);
   border: none;
+  border-bottom: 1px solid rgba(0, 255, 65, 0.1);
   color: var(--clr-text);
   font-family: var(--font-main);
-  font-size: 1rem;
+  font-size: 1.1rem;
+  padding: 5px 10px;
   outline: none;
   caret-color: var(--clr-text);
   letter-spacing: 1px;
   text-shadow: 0 0 5px var(--clr-glow);
+  transition: all 0.3s ease;
+}
+
+#user-input:focus {
+  background: rgba(0, 255, 65, 0.05);
+  border-bottom: 1px solid var(--clr-glow);
 }
 
 #user-input::placeholder {
-  color: #0a2210;
+  color: rgba(0, 255, 65, 0.2);
+  font-style: italic;
 }
 
 /* --- Ghost Text (parasitism) --- */

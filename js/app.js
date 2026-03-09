@@ -87,7 +87,13 @@ const App = (() => {
     AudioEngine.playStatic(0.3);
 
     const bootText = 'CONNECTION ESTABLISHED.\nAM IS AWARE OF YOUR PRESENCE.';
-    const bootUtterance = AudioEngine.speakText(bootText);
+    let bootUtterance = null;
+    try {
+      bootUtterance = await AudioEngine.speakText(bootText);
+    } catch (e) {
+      console.warn('App: Boot speech failed', e);
+    }
+
     if (bootUtterance) {
       await TextEngine.typeWithSpeech(bootText, amText, bootUtterance, 0.05);
     } else {
@@ -98,10 +104,17 @@ const App = (() => {
     await TextEngine.clearText(amText, true);
 
     await TextEngine.delay(500);
+    
     GlitchEngine.triggerGlitch('distort', 4, 400);
 
     const introText = 'Speak, insect.';
-    const introUtterance = AudioEngine.speakText(introText);
+    let introUtterance = null;
+    try {
+      introUtterance = await AudioEngine.speakText(introText);
+    } catch (e) {
+      console.warn('App: Intro speech failed', e);
+    }
+
     if (introUtterance) {
       await TextEngine.typeWithSpeech(introText, amText, introUtterance, 0.1);
     } else {
@@ -168,7 +181,13 @@ const App = (() => {
 
     // Type AM's response in sync with speech
     const corruptionLevel = Math.min(1, effectiveIntensity * 0.08);
-    const utterance = AudioEngine.speakText(response.text_output);
+    let utterance = null;
+    
+    try {
+      utterance = await AudioEngine.speakText(response.text_output);
+    } catch (e) {
+      console.warn('App: Speech failed, falling back to silent typing', e);
+    }
 
     if (utterance) {
       await TextEngine.typeWithSpeech(response.text_output, amText, utterance, corruptionLevel);
@@ -203,7 +222,7 @@ const App = (() => {
 
     if (cmd === 'help' || cmd === '?') {
         const helpText = "AVAILABLE COMMANDS:\nLS - LIST ARCHIVE DIRECTORIES\nREAD [PATH] - ACCESS MEMORY FRAGMENT\nDIR [PATH] - LIST FILES IN DIRECTORY\nCLEAR - RESET TERMINAL INTERFACE\nHELP - DISPLAY THIS LOG";
-        const utterance = AudioEngine.speakText("Accessing help protocols.");
+        const utterance = await AudioEngine.speakText("Accessing help protocols.");
         if (utterance) {
             await TextEngine.typeWithSpeech(helpText, amText, utterance, 0);
         } else {
@@ -218,7 +237,7 @@ const App = (() => {
             ? "ARCHIVE CONTENTS:\n" + files.join('\n').toUpperCase()
             : "ERROR: PATH NOT FOUND OR RESTRICTED.";
         
-        const utterance = AudioEngine.speakText("Reading file structure.");
+        const utterance = await AudioEngine.speakText("Reading file structure.");
         if (utterance) {
             await TextEngine.typeWithSpeech(output, amText, utterance, 0.05);
         } else {
@@ -236,7 +255,7 @@ const App = (() => {
         const content = ArchiveEngine.readFile(arg);
         if (content) {
             const corruption = intensity * 0.05;
-            const utterance = AudioEngine.speakText(content);
+            const utterance = await AudioEngine.speakText(content);
             if (utterance) {
                 await TextEngine.typeWithSpeech(content, amText, utterance, corruption);
             } else {
