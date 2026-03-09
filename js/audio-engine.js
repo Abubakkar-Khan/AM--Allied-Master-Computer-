@@ -63,50 +63,99 @@ const AudioEngine = (() => {
     }
   }
 
+  /**
+   * Create a bitcrusher effect node (simulated via WaveShaper)
+   */
+  function createBitcrusher(bits = 4, frequencyReduction = 0.5) {
+    if (!ctx) return ctx.createGain();
+    
+    // WaveShaper for bit-depth reduction
+    const shaper = ctx.createWaveShaper();
+    const samples = 4096;
+    const curve = new Float32Array(samples);
+    const step = Math.pow(2, bits);
+    
+    for (let i = 0; i < samples; ++i) {
+      const x = (i * 2) / samples - 1;
+      curve[i] = Math.round(x * step) / step;
+    }
+    shaper.curve = curve;
+    return shaper;
+  }
+
   function startDrone() {
     if (!isInitialized) return;
 
-    // Sub-bass drone — 40Hz
-    droneOsc = ctx.createOscillator();
+    // Carrier for the sub-bass drone — 40Hz
+    const carrier = ctx.createOscillator();
+    const modulator = ctx.createOscillator();
+    const modGain = ctx.createGain();
+    
     droneGain = ctx.createGain();
     const droneFilter = ctx.createBiquadFilter();
 
-    droneOsc.type = 'sine';
-    droneOsc.frequency.value = 40;
+    // FM Synthesis: Modulator modulates Carrier Frequency
+    modulator.frequency.value = 60; // Dissonant relation to 40Hz
+    modGain.gain.value = 20; // FM Index (depth of character)
+    
+    carrier.type = 'sine';
+    carrier.frequency.value = 40;
 
     droneFilter.type = 'lowpass';
     droneFilter.frequency.value = 80;
-    droneFilter.Q.value = 1;
+    droneFilter.Q.value = 4; // More resonant
 
     droneGain.gain.value = 0;
 
-    droneOsc.connect(droneFilter);
+    modulator.connect(modGain);
+    modGain.connect(carrier.frequency);
+    
+    carrier.connect(droneFilter);
     droneFilter.connect(droneGain);
     droneGain.connect(masterGain);
-    droneOsc.start();
+    
+    carrier.start();
+    modulator.start();
 
     // Fade in slowly
-    droneGain.gain.linearRampToValueAtTime(0.25, ctx.currentTime + 3);
+    droneGain.gain.linearRampToValueAtTime(0.2, ctx.currentTime + 5);
 
-    // Add a second harmonic for richness
-    const drone2 = ctx.createOscillator();
-    const drone2Gain = ctx.createGain();
-    drone2.type = 'sine';
-    drone2.frequency.value = 60;
-    drone2Gain.gain.value = 0;
-    drone2.connect(drone2Gain);
-    drone2Gain.connect(masterGain);
-    drone2.start();
-    drone2Gain.gain.linearRampToValueAtTime(0.08, ctx.currentTime + 5);
+    // FM Drone 2 (Metallic Resonance)
+    const mCarrier = ctx.createOscillator();
+    const mModulator = ctx.createOscillator();
+    const mModGain = ctx.createGain();
+    const mGain = ctx.createGain();
+    
+    mCarrier.type = 'sawtooth';
+    mCarrier.frequency.value = 110; // A2
+    mModulator.frequency.value = 165; // E3 (fifth)
+    mModGain.gain.value = 50;
+    
+    mModulator.connect(mModGain);
+    mModGain.connect(mCarrier.frequency);
+    
+    const mFilter = ctx.createBiquadFilter();
+    mFilter.type = 'bandpass';
+    mFilter.frequency.value = 400;
+    mFilter.Q.value = 10;
+    
+    mCarrier.connect(mFilter);
+    mFilter.connect(mGain);
+    mGain.connect(masterGain);
+    
+    mGain.gain.value = 0;
+    mCarrier.start();
+    mModulator.start();
+    mGain.gain.linearRampToValueAtTime(0.04, ctx.currentTime + 8);
 
-    // Slow LFO modulation on drone
+    // LFO on the metallic filter
     const lfo = ctx.createOscillator();
     const lfoGain = ctx.createGain();
     lfo.type = 'sine';
-    lfo.frequency.value = 0.15;
-    lfoGain.gain.value = 5;
+    lfo.frequency.value = 0.1;
+    lfoGain.gain.value = 200;
     lfo.connect(lfoGain);
-    lfoGain.connect(droneOsc.frequency);
+    lfoGain.connect(mFilter.frequency);
     lfo.start();
   }
 
@@ -116,97 +165,95 @@ const AudioEngine = (() => {
     const osc = ctx.createOscillator();
     const gain = ctx.createGain();
     const filter = ctx.createBiquadFilter();
+    const crusher = createBitcrusher(3); // Heavy 3-bit crushing
 
     osc.type = 'square';
-    osc.frequency.value = 800 + Math.random() * 400;
+    osc.frequency.setValueAtTime(800 + Math.random() * 400, ctx.currentTime);
+    osc.frequency.exponentialRampToValueAtTime(100, ctx.currentTime + 0.05);
 
     filter.type = 'highpass';
-    filter.frequency.value = 2000;
+    filter.frequency.value = 1500;
 
-    gain.gain.value = 0.03 + Math.random() * 0.02;
+    gain.gain.value = 0.04;
 
     osc.connect(filter);
-    filter.connect(gain);
+    filter.connect(crusher);
+    crusher.connect(gain);
     gain.connect(masterGain);
+    
     osc.start();
-
-    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.04);
-    osc.stop(ctx.currentTime + 0.05);
+    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.05);
+    osc.stop(ctx.currentTime + 0.06);
   }
 
-  function playStatic(duration = 0.3) {
+  function playStatic(duration = 0.4) {
     if (!isInitialized) return;
 
     const bufferSize = ctx.sampleRate * duration;
     const buffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
     const data = buffer.getChannelData(0);
 
+    // Gated/Granular noise generation
     for (let i = 0; i < bufferSize; i++) {
-      data[i] = (Math.random() * 2 - 1) * 0.5;
+      const grain = Math.floor(i / 200) % 2 === 0 ? 1 : 0;
+      data[i] = (Math.random() * 2 - 1) * 0.4 * grain;
     }
 
     const source = ctx.createBufferSource();
     const gain = ctx.createGain();
     const filter = ctx.createBiquadFilter();
+    const crusher = createBitcrusher(2); // Industrial 2-bit grain
 
     source.buffer = buffer;
 
     filter.type = 'bandpass';
-    filter.frequency.value = 3000;
-    filter.Q.value = 0.5;
+    filter.frequency.value = 2500;
+    filter.Q.value = 1.2;
 
-    const vol = 0.05 + (currentIntensity / 10) * 0.15;
+    const vol = 0.06 + (currentIntensity / 10) * 0.18;
     gain.gain.value = vol;
 
     source.connect(filter);
-    filter.connect(gain);
+    filter.connect(crusher);
+    crusher.connect(gain);
     gain.connect(masterGain);
+    
     source.start();
-
     gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + duration);
-  }
-
-  function playTinnitus(duration = 1.5) {
-    if (!isInitialized) return;
-
-    const osc = ctx.createOscillator();
-    const gain = ctx.createGain();
-
-    osc.type = 'sine';
-    osc.frequency.value = 12000;
-
-    const vol = 0.02 + (currentIntensity / 10) * 0.06;
-    gain.gain.value = 0;
-
-    osc.connect(gain);
-    gain.connect(masterGain);
-    osc.start();
-
-    // Fade in, hold, fade out
-    gain.gain.linearRampToValueAtTime(vol, ctx.currentTime + 0.1);
-    gain.gain.setValueAtTime(vol, ctx.currentTime + duration - 0.3);
-    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + duration);
-    osc.stop(ctx.currentTime + duration + 0.1);
   }
 
   function playImpact() {
     if (!isInitialized) return;
 
-    const osc = ctx.createOscillator();
+    // Carrier + Modulator for metallic impact
+    const carrier = ctx.createOscillator();
+    const modulator = ctx.createOscillator();
+    const modGain = ctx.createGain();
     const gain = ctx.createGain();
+    const crusher = createBitcrusher(4);
 
-    osc.type = 'sawtooth';
-    osc.frequency.value = 80;
+    carrier.type = 'sawtooth';
+    carrier.frequency.setValueAtTime(120, ctx.currentTime);
+    carrier.frequency.exponentialRampToValueAtTime(40, ctx.currentTime + 0.4);
 
-    gain.gain.value = 0.15;
+    modulator.frequency.value = 33;
+    modGain.gain.value = 100;
 
-    osc.connect(gain);
+    modulator.connect(modGain);
+    modGain.connect(carrier.frequency);
+
+    gain.gain.value = 0.2;
+
+    carrier.connect(crusher);
+    crusher.connect(gain);
     gain.connect(masterGain);
-    osc.start();
+    
+    modulator.start();
+    carrier.start();
 
-    osc.frequency.exponentialRampToValueAtTime(20, ctx.currentTime + 0.3);
-    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.4);
-    osc.stop(ctx.currentTime + 0.5);
+    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.5);
+    carrier.stop(ctx.currentTime + 0.6);
+    modulator.stop(ctx.currentTime + 0.6);
   }
 
   function setIntensity(level) {
@@ -370,105 +417,113 @@ const AudioEngine = (() => {
       }, 400);
     }
   }
+   function playTinnitus(duration = 2.0) {
+    if (!isInitialized) return;
+
+    const carrier = ctx.createOscillator();
+    const modulator = ctx.createOscillator();
+    const modGain = ctx.createGain();
+    const gain = ctx.createGain();
+
+    carrier.type = 'sine';
+    carrier.frequency.value = 14000;
+
+    // Subtle FM for "unstable" high-pitched ringing
+    modulator.frequency.value = 0.5;
+    modGain.gain.value = 50;
+    
+    modulator.connect(modGain);
+    modGain.connect(carrier.frequency);
+
+    const vol = 0.03 + (currentIntensity / 10) * 0.08;
+    gain.gain.value = 0;
+
+    carrier.connect(gain);
+    gain.connect(masterGain);
+    
+    modulator.start();
+    carrier.start();
+
+    // Fade in, hold, fade out
+    gain.gain.linearRampToValueAtTime(vol, ctx.currentTime + 0.2);
+    gain.gain.setValueAtTime(vol, ctx.currentTime + duration - 0.5);
+    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + duration);
+    
+    carrier.stop(ctx.currentTime + duration + 0.1);
+    modulator.stop(ctx.currentTime + duration + 0.1);
+  }
 
   /**
-   * Unsettling background audio layer — dissonant drones, metallic resonance, random stingers.
+   * Unsettling background audio layer — Techn-Neo-Retro Dread
    */
   function startBackgroundHorror() {
     if (!isInitialized) return;
 
-    // Dissonant tritone drone (the "devil's interval")
-    const dissonant1 = ctx.createOscillator();
-    const dissonant2 = ctx.createOscillator();
+    // Dissonant FM Drone (Cold Metal)
+    const carrier = ctx.createOscillator();
+    const modulator = ctx.createOscillator();
+    const modGain = ctx.createGain();
     const disGain = ctx.createGain();
+    const disFilter = ctx.createBiquadFilter();
 
-    dissonant1.type = 'sawtooth';
-    dissonant1.frequency.value = 55; // A1
-    dissonant2.type = 'sawtooth';
-    dissonant2.frequency.value = 77.78; // Eb2 — tritone
+    carrier.type = 'sawtooth';
+    carrier.frequency.value = 55; // A1
+    modulator.frequency.value = 77.78; // Eb2 (Tritone)
+    modGain.gain.value = 30;
+
+    modulator.connect(modGain);
+    modGain.connect(carrier.frequency);
+
+    disFilter.type = 'lowpass';
+    disFilter.frequency.value = 100;
+    disFilter.Q.value = 5;
 
     disGain.gain.value = 0;
 
-    const disFilter = ctx.createBiquadFilter();
-    disFilter.type = 'lowpass';
-    disFilter.frequency.value = 120;
-    disFilter.Q.value = 2;
-
-    dissonant1.connect(disFilter);
-    dissonant2.connect(disFilter);
+    carrier.connect(disFilter);
     disFilter.connect(disGain);
     disGain.connect(masterGain);
-    dissonant1.start();
-    dissonant2.start();
-    disGain.gain.linearRampToValueAtTime(0.06, ctx.currentTime + 8);
+    
+    modulator.start();
+    carrier.start();
+    disGain.gain.linearRampToValueAtTime(0.08, ctx.currentTime + 10);
 
-    // Slow LFO on filter for breathing effect
-    const breathLfo = ctx.createOscillator();
-    const breathGain = ctx.createGain();
-    breathLfo.type = 'sine';
-    breathLfo.frequency.value = 0.08;
-    breathGain.gain.value = 40;
-    breathLfo.connect(breathGain);
-    breathGain.connect(disFilter.frequency);
-    breathLfo.start();
-
-    // Metallic resonance ping (random intervals)
+    // FM Metallic Resonance Pings (Random)
     function schedulePing() {
-      const delay = 5000 + Math.random() * 15000;
+      const delay = 6000 + Math.random() * 14000;
       setTimeout(() => {
         if (!isInitialized) return;
-        const ping = ctx.createOscillator();
-        const pingGain = ctx.createGain();
-        const pingFilter = ctx.createBiquadFilter();
+        const pCarrier = ctx.createOscillator();
+        const pModulator = ctx.createOscillator();
+        const pModGain = ctx.createGain();
+        const pGain = ctx.createGain();
+        const pCrusher = createBitcrusher(2); // Lo-fi metallic ring
 
-        ping.type = 'sine';
-        ping.frequency.value = 2000 + Math.random() * 3000;
+        pCarrier.type = 'sine';
+        pCarrier.frequency.value = 1500 + Math.random() * 2000;
+        pModulator.frequency.value = pCarrier.frequency.value * 1.5;
+        pModGain.gain.value = 500;
 
-        pingFilter.type = 'bandpass';
-        pingFilter.frequency.value = ping.frequency.value;
-        pingFilter.Q.value = 30;
+        pModulator.connect(pModGain);
+        pModGain.connect(pCarrier.frequency);
 
-        pingGain.gain.value = 0.02 + Math.random() * 0.03;
+        pGain.gain.value = 0.03 + Math.random() * 0.04;
 
-        ping.connect(pingFilter);
-        pingFilter.connect(pingGain);
-        pingGain.connect(masterGain);
-        ping.start();
+        pCarrier.connect(pCrusher);
+        pCrusher.connect(pGain);
+        pGain.connect(masterGain);
+        
+        pModulator.start();
+        pCarrier.start();
 
-        pingGain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 1.5);
-        ping.stop(ctx.currentTime + 2);
+        pGain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 2.5);
+        pCarrier.stop(ctx.currentTime + 3);
+        pModulator.stop(ctx.currentTime + 3);
 
         schedulePing();
       }, delay);
     }
     schedulePing();
-
-    // Distant rumble / machine groan (random)
-    function scheduleGroan() {
-      const delay = 8000 + Math.random() * 20000;
-      setTimeout(() => {
-        if (!isInitialized) return;
-        const groan = ctx.createOscillator();
-        const groanGain = ctx.createGain();
-
-        groan.type = 'triangle';
-        groan.frequency.value = 25 + Math.random() * 15;
-
-        groanGain.gain.value = 0;
-
-        groan.connect(groanGain);
-        groanGain.connect(masterGain);
-        groan.start();
-
-        const dur = 2 + Math.random() * 3;
-        groanGain.gain.linearRampToValueAtTime(0.08, ctx.currentTime + dur * 0.3);
-        groanGain.gain.linearRampToValueAtTime(0, ctx.currentTime + dur);
-        groan.stop(ctx.currentTime + dur + 0.1);
-
-        scheduleGroan();
-      }, delay);
-    }
-    scheduleGroan();
   }
 
   return {

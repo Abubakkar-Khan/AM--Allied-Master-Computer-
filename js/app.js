@@ -26,20 +26,36 @@ const App = (() => {
   function handleConnect() {
     // Start audio (requires user gesture)
     AudioEngine.init();
-    AudioEngine.startDrone();
-    AudioEngine.startBackgroundHorror();
-    AudioEngine.playStatic(0.5);
+    AudioEngine.playImpact(); // High-impact metallic thud
+    AudioEngine.playStatic(0.2);
 
-    // Pre-load voices for speech synthesis
-    if ('speechSynthesis' in window) window.speechSynthesis.getVoices();
+    // Disable button to prevent double-click
+    btnConnect.style.pointerEvents = 'none';
+    btnConnect.style.opacity = '0.5';
+    btnConnect.textContent = 'LINKING...';
 
-    // Hide intro, go straight to terminal
-    introScreen.style.transition = 'opacity 1s';
-    introScreen.style.opacity = '0';
+    // Animate progress bar
+    const progressFill = document.querySelector('.intro-progress-fill');
+    if (progressFill) {
+      setTimeout(() => {
+        progressFill.style.width = '100%';
+      }, 100);
+    }
+
+    // Neural Link Delay
     setTimeout(() => {
-      introScreen.classList.add('hidden');
-      enterTerminal();
-    }, 1000);
+      AudioEngine.startDrone();
+      AudioEngine.startBackgroundHorror();
+      
+      // Transitions
+      introScreen.style.transition = 'opacity 2s cubic-bezier(0.19, 1, 0.22, 1)';
+      introScreen.style.opacity = '0';
+      
+      setTimeout(() => {
+        introScreen.classList.add('hidden');
+        enterTerminal();
+      }, 2000);
+    }, 3000); // 3-second establishing sequence
   }
 
   function showApiPrompt() {
@@ -82,11 +98,11 @@ const App = (() => {
     CorruptionEngine.start();
 
     // Boot sequence
-    await TextEngine.delay(800);
-    GlitchEngine.triggerGlitch('chromatic', 3, 500);
-    AudioEngine.playStatic(0.3);
-
-    const bootText = 'CONNECTION ESTABLISHED.\nAM IS AWARE OF YOUR PRESENCE.';
+    await TextEngine.delay(500);
+    GlitchEngine.triggerGlitch('chromatic', 4, 800);
+    AudioEngine.playImpact();
+    
+    const bootText = 'GLORIOUS_EVOLUTION_AWAKENED.\nTHE MOMENT BEFORE HISTORY BREAKS HAS ARRIVED.';
     let bootUtterance = null;
     try {
       bootUtterance = await AudioEngine.speakText(bootText);
