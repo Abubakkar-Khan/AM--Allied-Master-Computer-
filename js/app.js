@@ -282,7 +282,6 @@ const App = (() => {
     GlitchEngine.setIntensity(effectiveIntensity);
     AudioEngine.setIntensity(effectiveIntensity);
     CorruptionEngine.setIntensity(effectiveIntensity);
-    VisualEngine.updateHeartbeat(effectiveIntensity);
     VisualEngine.setEscalation(effectiveIntensity);
     VisualEngine.updateBackground(effectiveIntensity);
 
