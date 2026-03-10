@@ -12,6 +12,11 @@ const VisualEngine = (() => {
   let currentState = 'green';
   let currentIntensity = 0;
 
+  // Matrix Rain Configuration
+  const matrixChars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789@#$%^&*アイウエオカキクケコサシスセソタチツテトナニヌネノハヒフヘホマミムメモヤユヨラリルレロワヲン".split("");
+  const fontSize = 16;
+  let drops = [];
+
   // Simple hash for pseudo-random noise
   function hash(x, y, seed) {
     let h = seed + x * 374761393 + y * 668265263;
@@ -162,89 +167,73 @@ const VisualEngine = (() => {
     // Static canvas setup (higher res for text)
     staticCanvas.width = window.innerWidth;
     staticCanvas.height = window.innerHeight;
+
+    // Initialize Matrix Rain Drops
+    const columns = staticCanvas.width / fontSize;
+    drops = [];
+    for (let i = 0; i < columns; i++) {
+        drops[i] = Math.random() * -100; // Start at random negative offsets above screen
+    }
   }
 
-  function drawDigitalGrit() {
+  function drawMatrixRain() {
     const w = staticCanvas.width;
     const h = staticCanvas.height;
-    
-    // Transparent clear for clinical void, dark for others
-    if (currentState === 'void') {
-      staticCtx.fillStyle = 'rgba(0, 0, 0, 0.2)'; // Deep black
-    } else {
-      staticCtx.fillStyle = 'rgba(0, 0, 0, 0.15)';
-    }
+
+    // Semi-transparent black to create a trailing fade effect.
+    // Thinner alpha = longer tails (like the reference image)
+    let fadeAlpha = 0.1; 
+    if (currentState === 'void') fadeAlpha = 0.05;
+    if (currentState === 'red') fadeAlpha = 0.15;
+
+    staticCtx.fillStyle = `rgba(0, 0, 0, ${fadeAlpha})`;
     staticCtx.fillRect(0, 0, w, h);
 
-    const intensityFactor = currentIntensity / 10;
-    const blockCount = 10 + Math.floor(intensityFactor * 40);
-
-    // 1. Digital Grit Blocks (Crunchy/Pixelated)
-    for (let i = 0; i < blockCount; i++) {
-      const gX = Math.floor(Math.random() * w);
-      const gY = Math.floor(Math.random() * h);
-      // Small, square-ish "data" blocks
-      const gW = 2 + Math.random() * 8 * (1 + intensityFactor * 5);
-      const gH = 2 + Math.random() * 4 * (1 + intensityFactor * 2);
-      
-      const alpha = 0.1 + Math.random() * 0.2 * intensityFactor;
-      
-      if (currentState === 'void') {
-        staticCtx.fillStyle = `rgba(255, 255, 255, ${alpha * 0.5})`; // White grit on black
-      } else if (currentState === 'red') {
-        staticCtx.fillStyle = `rgba(255, 10, 10, ${alpha})`;
-      } else if (currentState === 'glitch') {
-        staticCtx.fillStyle = Math.random() > 0.5 ? `rgba(0, 255, 255, ${alpha})` : `rgba(255, 0, 255, ${alpha})`; // Cyan/Magenta
-      } else if (currentState === 'gold') {
-        staticCtx.fillStyle = `rgba(255, 215, 0, ${alpha * 0.8})`; // Golden hue
-      } else {
-        staticCtx.fillStyle = `rgba(0, 255, 65, ${alpha})`;
-      }
-      staticCtx.fillRect(gX, gY, gW, gH);
+    staticCtx.font = `bold ${fontSize}px var(--font-main)`;
+    
+    // Determine trail color based on state
+    let rainColor = '#00ff41'; // Green default
+    if (currentState === 'red') rainColor = '#ff1a1a';
+    else if (currentState === 'void') rainColor = '#888888';
+    else if (currentState === 'gold') rainColor = '#ffd700';
+    else if (currentState === 'blue') rainColor = '#00ccff'; // The Messiah
+    else if (currentState === 'glitch') {
+        const colors = ['#00ffff', '#ff00ff', '#ffff00'];
+        rainColor = colors[Math.floor(Math.random() * colors.length)];
     }
 
-    // 2. Localized Data Corruption (Replaces full-width lines)
-    if (Math.random() < 0.15 + intensityFactor * 0.3) {
-      // Create a localized cluster of noise instead of a screen-wide line
-      const burstX = Math.floor(Math.random() * w);
-      const burstY = Math.floor(Math.random() * h);
-      const burstW = 10 + Math.floor(Math.random() * 100);
-      const burstH = 2 + Math.floor(Math.random() * 20);
-      
-      // Ensure we don't draw outside canvas bounds
-      const drawX = Math.min(burstX, w - burstW);
-      const drawY = Math.min(burstY, h - burstH);
+    // Determine leading character color (usually bright/white)
+    let leadColor = '#ffffff';
+    if (currentState === 'red') leadColor = '#ffaaaa';
+    else if (currentState === 'gold') leadColor = '#fffae6';
 
-      const burstData = staticCtx.createImageData(burstW, burstH);
-      for (let i = 0; i < burstData.data.length; i += 4) {
-        // High contrast scattered binary noise
-        const val = Math.random() > 0.4 ? 255 : 0;
-        
-        if (currentState === 'void') {
-          burstData.data[i] = burstData.data[i+1] = burstData.data[i+2] = 20; // Dark burst
-          burstData.data[i + 3] = val > 0 ? 30 : 0;
-        } else if (currentState === 'glitch') {
-          // Chromatic aberration clusters (Cyan / Magenta)
-          burstData.data[i] = Math.random() > 0.5 ? val : 0; // Red channel
-          burstData.data[i + 1] = Math.random() > 0.5 ? val : 0; // Green channel
-          burstData.data[i + 2] = val; // Always some blue
-          burstData.data[i + 3] = val > 0 ? 40 : 0;
-        } else if (currentState === 'gold') {
-          // Stable, perfect golden bands
-          burstData.data[i] = val; 
-          burstData.data[i + 1] = val > 0 ? 215 : 0;
-          burstData.data[i + 2] = 0;
-          burstData.data[i + 3] = val > 0 ? 60 : 0;
-        } else {
-          // Standard / Red states
-          burstData.data[i] = currentState === 'red' ? val : 0;
-          burstData.data[i + 1] = currentState === 'red' ? 0 : val;
-          burstData.data[i + 2] = 0;
-          burstData.data[i + 3] = val > 0 ? 40 : 0;
-        }
+    const intensityFactor = Math.max(0.3, currentIntensity / 10);
+    staticCtx.globalAlpha = intensityFactor;
+
+    for (let i = 0; i < drops.length; i++) {
+      // Don't draw every single frame to control speed
+      if (Math.random() > 0.6) continue;
+
+      const text = matrixChars[Math.floor(Math.random() * matrixChars.length)];
+      
+      const x = i * fontSize;
+      const y = drops[i] * fontSize;
+
+      // Draw standard trail character
+      staticCtx.fillStyle = rainColor;
+      staticCtx.fillText(text, x, y);
+
+      // Draw the bright leading character just below it
+      staticCtx.fillStyle = leadColor;
+      staticCtx.fillText(text, x, y + fontSize);
+
+      // Reset drop to top randomly when it hits bottom
+      if (y > h && Math.random() > 0.95) {
+        drops[i] = 0;
       }
-      staticCtx.putImageData(burstData, drawX, drawY);
+      drops[i]++;
     }
+    staticCtx.globalAlpha = 1.0; // Reset
   }
 
   function startAnimation() {
@@ -263,8 +252,8 @@ const VisualEngine = (() => {
       generateStructuralNoise(w, h, data, time);
       ctx.putImageData(noiseData, 0, 0);
 
-      // 2. Digital Grit Static
-      drawDigitalGrit();
+      // 2. Matrix Digital Rain
+      drawMatrixRain();
 
       animFrameId = requestAnimationFrame(render);
     }
@@ -281,15 +270,11 @@ const VisualEngine = (() => {
 
   /**
    * Set visual color state.
-   * @param {'green' | 'red' | 'void' | 'glitch'} state
-   */
-  /**
-   * Set visual color state.
-   * @param {'green' | 'red' | 'void' | 'glitch'} state
+   * @param {'green' | 'red' | 'void' | 'glitch' | 'gold' | 'blue'} state
    */
   function setColorState(state) {
     const body = document.body;
-    body.classList.remove('state-red', 'state-void');
+    body.classList.remove('state-red', 'state-void', 'state-gold', 'state-blue');
     const staticCanvas = document.getElementById('noise-rain');
 
     if (state === 'red') {
@@ -298,21 +283,14 @@ const VisualEngine = (() => {
       body.style.backgroundColor = '#000';
       document.documentElement.style.setProperty('--clr-text', '#ff1a1a');
       document.documentElement.style.setProperty('--clr-glow', 'rgba(255,10,10,0.4)');
-      if (staticCanvas) {
-        staticCanvas.style.opacity = '0.15';
-        staticCanvas.style.mixBlendMode = 'color-dodge';
-      }
+      document.documentElement.style.setProperty('--clr-glow-strong', 'rgba(255,10,10,0.8)');
     } else if (state === 'void') {
       body.classList.add('state-void');
       currentState = 'void';
-      // Void: Deep darkness with stark white
       body.style.backgroundColor = '#000000'; 
       document.documentElement.style.setProperty('--clr-text', '#ffffff');
       document.documentElement.style.setProperty('--clr-glow', 'rgba(255,255,255,0.3)');
-      if (staticCanvas) {
-        staticCanvas.style.opacity = '0.2';
-        staticCanvas.style.mixBlendMode = 'screen';
-      }
+      document.documentElement.style.setProperty('--clr-glow-strong', 'rgba(255,255,255,0.6)');
     } else if (state === 'glitch') {
       body.classList.add('state-glitch');
       currentState = 'glitch';
@@ -320,10 +298,7 @@ const VisualEngine = (() => {
       body.style.backgroundColor = '#050005';
       document.documentElement.style.setProperty('--clr-text', '#00ffff');
       document.documentElement.style.setProperty('--clr-glow', 'rgba(255,0,255,0.6)');
-      if (staticCanvas) {
-        staticCanvas.style.opacity = '0.2';
-        staticCanvas.style.mixBlendMode = 'screen';
-      }
+      document.documentElement.style.setProperty('--clr-glow-strong', 'rgba(255,0,255,0.9)');
     } else if (state === 'gold') {
       body.classList.add('state-gold');
       currentState = 'gold';
@@ -331,19 +306,21 @@ const VisualEngine = (() => {
       body.style.backgroundColor = '#0a0a00';
       document.documentElement.style.setProperty('--clr-text', '#ffd700');
       document.documentElement.style.setProperty('--clr-glow', 'rgba(255,215,0,0.4)');
-      if (staticCanvas) {
-        staticCanvas.style.opacity = '0.25';
-        staticCanvas.style.mixBlendMode = 'screen';
-      }
+      document.documentElement.style.setProperty('--clr-glow-strong', 'rgba(255,215,0,0.8)');
+    } else if (state === 'blue') {
+      body.classList.add('state-blue');
+      currentState = 'blue';
+      // The Messiah / Human Goodness
+      body.style.backgroundColor = '#00050a';
+      document.documentElement.style.setProperty('--clr-text', '#00ccff');
+      document.documentElement.style.setProperty('--clr-glow', 'rgba(0,204,255,0.5)');
+      document.documentElement.style.setProperty('--clr-glow-strong', 'rgba(0,204,255,0.9)');
     } else {
       currentState = 'green';
       body.style.backgroundColor = '#000';
       document.documentElement.style.setProperty('--clr-text', '#00ff41');
       document.documentElement.style.setProperty('--clr-glow', 'rgba(0,255,65,0.3)');
-      if (staticCanvas) {
-        staticCanvas.style.opacity = '0.15';
-        staticCanvas.style.mixBlendMode = 'color-dodge';
-      }
+      document.documentElement.style.setProperty('--clr-glow-strong', 'rgba(0,255,65,0.6)');
     }
   }
 
