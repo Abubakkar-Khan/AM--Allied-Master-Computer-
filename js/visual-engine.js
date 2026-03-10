@@ -25,11 +25,46 @@ const VisualEngine = (() => {
     return (h & 0x7fffffff) / 0x7fffffff;
   }
 
-  // Noise disabled — EVA aesthetic uses scanlines + matrix rain only
-  function generateStructuralNoise(w, h, data, timeOffset) {
-    // Clear to fully transparent — no chunky block noise
+  // 1-Bit Necrotic Noise: High-contrast dithered structures
+  function generateNecroticNoise(w, h, data, timeOffset) {
+    const intensity = currentIntensity * 0.1;
     for (let i = 0; i < data.length; i += 4) {
-      data[i] = 0; data[i+1] = 0; data[i+2] = 0; data[i+3] = 0;
+      const x = (i / 4) % w;
+      const y = Math.floor((i / 4) / w);
+      
+      // Animated organic noise (vein-like)
+      const n1 = hash(x * 0.1, y * 0.1, Math.floor(timeOffset * 0.5));
+      const n2 = hash(x * 0.02, y * 0.02, Math.floor(timeOffset * 0.2));
+      
+      // Combine for organic 'rot'
+      let val = (n1 * 0.7 + n2 * 0.3);
+      
+      // 1-Bit Dithering (Ordered Dither approximation)
+      const threshold = ( (x % 2) + (y % 2) * 2 ) * 0.25;
+      const bit = val > (0.5 + intensity + threshold) ? 255 : 0;
+      
+      data[i] = bit;     // R
+      data[i+1] = bit * 0.8; // G (Slightly sickly green/amber)
+      data[i+2] = bit * 0.5; // B
+      data[i+3] = bit > 0 ? 40 : 0; // Alpha
+    }
+  }
+
+  // Biological Rot: Veins/Decay
+  function drawBiologicalRot(tCtx, w, h) {
+    tCtx.strokeStyle = 'rgba(255, 40, 0, 0.4)';
+    tCtx.lineWidth = 1;
+    for(let i=0; i<10; i++) {
+        tCtx.beginPath();
+        let x = Math.random() * w;
+        let y = Math.random() * h;
+        tCtx.moveTo(x, y);
+        for(let j=0; j<20; j++) {
+            x += (Math.random() - 0.5) * 40;
+            y += (Math.random() - 0.5) * 40;
+            tCtx.lineTo(x, y);
+        }
+        tCtx.stroke();
     }
   }
 
@@ -60,6 +95,7 @@ const VisualEngine = (() => {
     red: ['red_glitch.gif', 'gtitch_face.gif'],
     void: ['void glitch.gif'],
     blue: ['blue_am.gif'],
+    gold: ['am.gif', 'am9.jpg', 'am11.jpg'],
     glitch: ['body_glitch.gif', 'body_glitch2.gif', 'am.gif']
   };
 
@@ -81,12 +117,12 @@ const VisualEngine = (() => {
     else if (intensity >= 4) category = 'medium';
 
     const now = Date.now();
-    // Swap rate depends on intensity (low = 8s, high = 1s)
-    const swapInterval = Math.max(1000, 8000 - (intensity * 800));
+    // Swap rate depends on intensity (low = 10s, high = 0.5s)
+    const swapInterval = Math.max(500, 10000 - (intensity * 950));
 
     // Priority 1: State-specific GIFs for intense states
     const hasStateGif = stateGifs[currentState];
-    const shouldShowGif = hasStateGif && (intensity >= 5 || forceHorror || Math.random() < 0.3);
+    const shouldShowGif = hasStateGif && (intensity >= 5 || forceHorror || Math.random() < 0.2);
 
     if (shouldShowGif) {
       const pool = stateGifs[currentState];
@@ -100,11 +136,23 @@ const VisualEngine = (() => {
         void bgLayer.offsetWidth; // Force reflow
         
         bgLayer.style.backgroundImage = `url('images/${gif}')`;
-        bgLayer.style.filter = currentState === 'red' || currentState === 'glitch'
-          ? 'grayscale(0.5) contrast(200%) brightness(1.2)'
-          : 'grayscale(0.8) contrast(150%) brightness(0.8)';
-        bgLayer.style.opacity = intensity >= 8 ? '0.35' : '0.2';
+        
+        let filter = 'grayscale(0.8) contrast(150%) brightness(0.8)';
+        if (currentState === 'red' || currentState === 'glitch') {
+          filter = `grayscale(0.3) contrast(${150 + intensity * 20}%) brightness(${1.0 + intensity * 0.05})`;
+        } else if (currentState === 'gold') {
+          filter = `sepia(1) saturate(3) contrast(150%) brightness(${1.0 + intensity * 0.05})`;
+        }
+
+        bgLayer.style.filter = filter;
+        bgLayer.style.opacity = intensity >= 8 ? '0.45' : '0.2';
         bgLayer.classList.add('flash-glitch-active');
+
+        // Extra chaos at intensity 10
+        if (intensity >= 10 && Math.random() < 0.4) {
+             triggerDigitalGlitch(true);
+             setTimeout(() => triggerDigitalGlitch(false), 300);
+        }
       }
       return;
     }
@@ -142,13 +190,11 @@ const VisualEngine = (() => {
   }
 
   function resize() {
-    // Use lower resolution for noise performance
-    const scale = 0.25;
+    // Use lower resolution for necrotic noise performance
+    const scale = 0.5; 
     canvas.width = window.innerWidth * scale;
     canvas.height = window.innerHeight * scale;
-    canvas.style.width = '100%';
-    canvas.style.height = '100%';
-    canvas.style.imageRendering = 'pixelated';
+    canvas.style.opacity = '1.0'; // Enable noise layer
     noiseData = ctx.createImageData(canvas.width, canvas.height);
 
     // Static canvas setup (higher res for text)
@@ -183,9 +229,9 @@ const VisualEngine = (() => {
     else if (currentState === 'red') rainColor = '#e81900';
     else if (currentState === 'void') rainColor = '#6a6055';
     else if (currentState === 'gold') rainColor = '#f5c518';
-    else if (currentState === 'blue') rainColor = '#4466cc';
+    else if (currentState === 'blue') rainColor = '#7099dd';
     else if (currentState === 'glitch') {
-        const colors = ['#f0903a', '#f5c518', '#e81900', '#00ff41'];
+        const colors = ['#f0903a', '#f5c518', '#e81900', '#00ff41', '#7099dd'];
         rainColor = colors[Math.floor(Math.random() * colors.length)];
     }
 
@@ -238,7 +284,7 @@ const VisualEngine = (() => {
       const h = canvas.height;
       const data = noiseData.data;
 
-      generateStructuralNoise(w, h, data, time);
+      generateNecroticNoise(w, h, data, time);
       ctx.putImageData(noiseData, 0, 0);
 
       // 2. Matrix Digital Rain
@@ -346,17 +392,22 @@ const VisualEngine = (() => {
     nodes.forEach((node, idx) => {
       if (idx < level * 1.5) {
         node.classList.add('active');
+        if (level >= 8) node.style.boxShadow = '0 0 10px #ff2b00';
       } else {
         node.classList.remove('active');
+        node.style.boxShadow = 'none';
       }
     });
 
-    // Background color shifts on extreme escalation
+    // Intense visual shifts
     if (level >= 9) {
-      document.body.style.backgroundColor = '#1a0500';
+      document.body.classList.add('visual-hysteria');
     } else {
-      document.body.style.backgroundColor = '#0a0400';
+      document.body.classList.remove('visual-hysteria');
     }
+
+    // Chromatic aberration intensity
+    document.documentElement.style.setProperty('--glitch-intensity', `${level * 0.1}`);
   }
 
   /**

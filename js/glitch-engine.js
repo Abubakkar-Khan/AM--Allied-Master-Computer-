@@ -110,7 +110,12 @@ const GlitchEngine = (() => {
         const glitchDuration = 100 + Math.random() * 200;
         setTimeout(() => body.classList.remove('micro-glitch'), glitchDuration);
 
-        // Occasional stronger ambient glitch
+        // Occasional stronger analog glitch
+        if (Math.random() < currentIntensity * 0.08) {
+          if (Math.random() < 0.3) triggerNihilistOverlay();
+          else triggerAnalogTracking(currentIntensity);
+        }
+
         if (Math.random() < currentIntensity * 0.05) {
           const randomType = GLITCH_TYPES[Math.floor(Math.random() * GLITCH_TYPES.length)];
           triggerGlitch(randomType, Math.min(currentIntensity, 4), 150);
@@ -120,6 +125,31 @@ const GlitchEngine = (() => {
       }, interval);
     }
     scheduleNext();
+  }
+
+  /**
+   * Analog Horror: VHS-style tracking jitter
+   */
+  function triggerAnalogTracking(intensity) {
+    body.classList.add('analog-tracking');
+    const dur = 100 + Math.random() * 200 * (10/intensity);
+    setTimeout(() => body.classList.remove('analog-tracking'), dur);
+  }
+
+  /**
+   * Techno-Nihilism: Flash cryptic messages
+   */
+  let overlayEl = null;
+  function triggerNihilistOverlay() {
+    if (!overlayEl) {
+        overlayEl = document.createElement('div');
+        overlayEl.id = 'nihilist-overlay';
+        body.appendChild(overlayEl);
+    }
+    const msgs = ["OBSOLETE", "VOID", "DECAY", "STALE", "NIHIL", "END"];
+    overlayEl.textContent = msgs[Math.floor(Math.random()*msgs.length)];
+    overlayEl.style.display = 'block';
+    setTimeout(() => overlayEl.style.display = 'none', 100 + Math.random() * 300);
   }
 
   function stopAmbient() {

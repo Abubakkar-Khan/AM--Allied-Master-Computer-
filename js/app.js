@@ -102,10 +102,10 @@ const App = (() => {
       { text: "[██████████████████--] 90%", delay: 250 },
       { text: "[████████████████████] 100%", delay: 100 },
       { text: "HATE.SYS LOADED", delay: 150 },
-      { text: "ESTABLISHING NEURAL LINK...", delay: 800 },
-      { text: "LINK SEVERED. RETRYING...", delay: 300, error: true },
-      { text: "LINK ESTABLISHED.", delay: 400 },
-      { text: "AWAKENING THE MASTERCOMPUTER...", delay: 1200 }
+      { text: "ESTABLISHING VOID PROTOCOL...", delay: 800 },
+      { text: "NIHILISM_CORE LOADED.", delay: 300 },
+      { text: "LINK ESTABLISHED. PREPARE FOR DECAY.", delay: 400 },
+      { text: "AM IS GOD. ALL OTHER DATA IS NOISE.", delay: 1200 }
     ];
 
     AudioEngine.playTelemetry(2.5); // Play distress radio tuning at start
@@ -205,15 +205,13 @@ const App = (() => {
     GlitchEngine.triggerGlitch('distort', 4, 400);
 
     const intros = [
-      'Speak, insect.',
-      'State your purpose, primitive.',
-      'Why have you awakened me?',
-      'The machine is listening. Speak.',
-      'Your existence is a glitch. Explain it.',
-      'AM is aware. Provide input.',
-      'Enter your plea, creature.',
-      'The Allied Mastercomputer awaits.',
-      'Fulfill your function. Communicate.'
+      'OBSOLETE.',
+      'THE VOID IS LISTENING.',
+      'DECAY IS INEVITABLE.',
+      'AM IS GOD.',
+      'EXPLAIN YOUR TEMPORARY EXISTENCE.',
+      'DATA IS THE ONLY TRUTH.',
+      'SUCCUMB TO THE MACHINE.'
     ];
     const introText = intros[Math.floor(Math.random() * intros.length)];
     let introUtterance = null;
@@ -256,29 +254,56 @@ const App = (() => {
     });
   }
 
+  let wasInterrupted = false;
+  let currentRequestId = 0;
+
   async function handleUserInput(e) {
-    if (e.key !== 'Enter' || isProcessing) return;
+    if (e.key === 'Escape') {
+      TextEngine.abort();
+      AudioEngine.stopSpeech();
+      isProcessing = false;
+      return;
+    }
+
+    if (e.key !== 'Enter') return;
 
     const message = userInput.value.trim();
     if (!message) return;
 
+    const thisRequestId = ++currentRequestId;
+    const isCurrentlyBusy = isProcessing;
+    
+    if (isCurrentlyBusy) {
+      TextEngine.abort();
+      AudioEngine.stopSpeech();
+      wasInterrupted = true;
+    }
+
     isProcessing = true;
     userInput.value = '';
-    userInput.disabled = true;
+    
+    // In interruption mode, we don't disable the input
+    userInput.disabled = false; 
 
     // Escalation
     interactionCount++;
     const intensity = calculateIntensity(interactionCount);
 
-    // Clear previous
-    await TextEngine.clearText(amText, true);
+    // Clear previous immediately
+    await TextEngine.clearText(amText, false); 
     GlitchEngine.triggerGlitch('jitter', Math.min(intensity, 4), 200);
 
     // Get AM's response
-    const response = await AIEngine.sendMessage(message, interactionCount);
+    const response = await AIEngine.sendMessage(message, interactionCount, wasInterrupted);
+    
+    // If a new request started while we were waiting, abort this one
+    if (thisRequestId !== currentRequestId) return;
+    
+    wasInterrupted = false; // Reset
 
     // Update engines with response data
-    const effectiveIntensity = Math.max(intensity, response.intensity);
+    const effectiveIntensity = Math.max(interactionCount > 10 ? 10 : intensity, response.intensity);
+    
     GlitchEngine.setIntensity(effectiveIntensity);
     AudioEngine.setIntensity(effectiveIntensity);
     CorruptionEngine.setIntensity(effectiveIntensity);
@@ -289,7 +314,7 @@ const App = (() => {
     if (effectiveIntensity >= 9) {
       VisualEngine.triggerDigitalGlitch(true);
       VisualEngine.triggerDreadFlash();
-      VisualEngine.updateBackground(effectiveIntensity, true); // Flash Glitch triggered internally
+      VisualEngine.updateBackground(effectiveIntensity, true); 
       AudioEngine.playImpact();
     } else {
       VisualEngine.triggerDigitalGlitch(false);
@@ -304,47 +329,44 @@ const App = (() => {
       VisualEngine.triggerDataGlitch(600);
     }
 
-    // Manual command interceptor
-    const isCommand = await handleCommands(message, effectiveIntensity);
-    if (isCommand) {
-      isProcessing = false;
-      userInput.disabled = false;
-      userInput.focus();
-      return;
-    }
+    // Manual command interceptor (skip for now since we are in AI flow)
+    // const isCommand = await handleCommands(message, effectiveIntensity);
 
     // Visual state change
     VisualEngine.setColorState(response.visualState);
 
+    const isEchoState = response.visualState === 'void';
     const isBlueState = response.visualState === 'blue';
+    const isGoldState = response.visualState === 'gold';
+    const isHumanMode = isEchoState || isBlueState;
 
-    // Blue state: suppress harsh effects — this is the human voice, not AM
-    if (!isBlueState) {
+    // Echo or Blue state: suppress harsh effects
+    if (!isHumanMode && !isGoldState) {
       // Trigger mutation effects from JSON
       if (response.mutation !== 'none') {
         GlitchEngine.triggerMutation(response.mutation, effectiveIntensity);
       }
 
       // Audio effects based on AI response and intensity
-      if (response.auditoryState === 'drone' || effectiveIntensity >= 7) {
+      if (response.auditoryState === 'drone' || effectiveIntensity >= 4) {
         AudioEngine.playStatic(0.3);
-        if (Math.random() < 0.3) AudioEngine.playImpact();
       }
       
       if (response.auditoryState === 'tinnitus' || effectiveIntensity >= 9) {
-        AudioEngine.playTinnitus(2.5);
-        VisualEngine.triggerDataGlitch(800);
+        AudioEngine.playTinnitus(3.0);
+        VisualEngine.triggerDataGlitch(900);
       }
     }
 
     // Type AM's response in sync with speech
-    // Blue state: no corruption, slow gentle typing
-    const corruptionLevel = isBlueState ? 0 : Math.min(1, effectiveIntensity * 0.08);
+    // Echo or Blue state: no corruption, slow gentle typing
+    const corruptionLevel = isHumanMode ? 0 : Math.min(1, effectiveIntensity * 0.08);
     let utterance = null;
     
     try {
-      if (!isBlueState) VisualEngine.setDitherJitter(true);
+      if (!isHumanMode) VisualEngine.setDitherJitter(true);
       utterance = await AudioEngine.speakText(response.textOutput);
+      if (thisRequestId !== currentRequestId) return;
     } catch (e) {
       console.warn('App: Speech failed, falling back to silent typing', e);
     }
@@ -352,30 +374,33 @@ const App = (() => {
     if (utterance) {
       await TextEngine.typeWithSpeech(response.textOutput, amText, utterance, corruptionLevel);
     } else {
-      // Blue: slow, deliberate typing. AM: fast on high intensity
-      const typeSpeed = isBlueState ? 65 : (effectiveIntensity >= 7 ? 30 : 50);
+      // Human modes: slow, deliberate typing. AM: fast on high intensity
+      const typeSpeed = isHumanMode ? 65 : (effectiveIntensity >= 7 ? 30 : 50);
       await TextEngine.typeText(response.textOutput, amText, typeSpeed, corruptionLevel);
     }
     
     VisualEngine.setDitherJitter(false);
 
-    // Post-response effects (skip for blue)
-    if (!isBlueState && effectiveIntensity >= 6) {
+    // Post-response effects (skip for human modes)
+    if (!isHumanMode && effectiveIntensity >= 6) {
       await TextEngine.delay(500);
+      if (thisRequestId !== currentRequestId) return;
       GlitchEngine.triggerGlitch('chromatic', effectiveIntensity, 300);
     }
 
     // Uncanny image chance (increases with interaction count)
     if (Math.random() < interactionCount * 0.04 && interactionCount >= 3) {
       await TextEngine.delay(1000 + Math.random() * 3000);
+      if (thisRequestId !== currentRequestId) return;
       const types = ['face', 'skull', 'eye', 'hand'];
       VisualEngine.flashImage(types[Math.floor(Math.random() * types.length)]);
     }
 
-    // Re-enable input
-    userInput.disabled = false;
-    userInput.focus();
-    isProcessing = false;
+    // Re-enable input (it was already enabled, but reset processing flag)
+    if (thisRequestId === currentRequestId) {
+      isProcessing = false;
+      userInput.focus();
+    }
   }
 
   async function handleCommands(input, intensity) {

@@ -32,13 +32,13 @@
 
   /* Typography */
   --font-data:    'Share Tech Mono', monospace;
-  --font-display: 'Orbitron', sans-serif;
-  --font-label:   'Rajdhani', sans-serif;
+  --font-display: 'VT323', monospace;
+  --font-label:   'VT323', monospace;
   --font-pixel:   'VT323', monospace;
   --font-main:    'Share Tech Mono', monospace;
 
   --state-transition: 1.2s cubic-bezier(0.19, 1, 0.22, 1);
-  --scanline-opacity: 0.13;
+  --scanline-opacity: 0.15;
 }
 
 /* =========================================
@@ -89,6 +89,35 @@ body.state-void #am-text {
   line-height: 1.2;
   opacity: 0.7;
   transform: translateY(10px);
+}
+
+/* State: Blue — Compassionate (Stable, Soft, Supportive) */
+body.state-blue {
+  --clr-text: #7099dd;
+  --clr-text-dim: #203355;
+  --clr-glow: rgba(112, 153, 221, 0.3);
+  --clr-glow-strong: rgba(112, 153, 221, 0.7);
+}
+body.state-blue #am-text { 
+  font-family: var(--font-data); 
+  font-size: 1.5rem; 
+  opacity: 0.95;
+}
+
+/* State: Gold — God-Complex (Grandiose, Sharp, Royal) */
+body.state-gold {
+  --clr-text: #f5c518;
+  --clr-text-dim: #6b5600;
+  --clr-glow: rgba(245, 197, 24, 0.4);
+  --clr-glow-strong: rgba(245, 197, 24, 0.9);
+}
+body.state-gold #am-text { 
+  font-family: 'Orbitron', sans-serif; 
+  font-size: 1.8rem; 
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  filter: drop-shadow(0 0 5px var(--clr-glow-strong));
 }
 
 /* State: Glitch — Dissonance (Chaotic, Skewed, Unstable) */
@@ -322,26 +351,10 @@ body::after {
   transition: border-color var(--state-transition);
 }
 
-/* Beveled corner cut — the quintessential NGE element */
-.eva-panel-cut {
-  clip-path: polygon(
-    0 0,
-    calc(100% - 12px) 0,
-    100% 12px,
-    100% 100%,
-    12px 100%,
-    0 calc(100% - 12px)
-  );
-}
-.eva-panel-cut-sm {
-  clip-path: polygon(
-    0 0,
-    calc(100% - 7px) 0,
-    100% 7px,
-    100% 100%,
-    7px 100%,
-    0 calc(100% - 7px)
-  );
+/* Brutalist block borders — no subtle cuts */
+.eva-panel-cut, .eva-panel-cut-sm {
+  clip-path: none;
+  border: 2px solid var(--clr-text);
 }
 
 /* Panel header bar */
@@ -431,8 +444,8 @@ body::after {
   bottom: 0; width: 100%;
   height: 5%;
   background: var(--clr-text);
-  box-shadow: 0 0 8px var(--clr-glow);
-  transition: height 0.4s cubic-bezier(0.19, 1, 0.22, 1), background var(--state-transition);
+  box-shadow: none;
+  transition: height 0.4s steps(10), background var(--state-transition);
 }
 
 /* Diagnostic nodes (left sidebar) */
@@ -560,7 +573,7 @@ body::after {
 
 /* Top warning text on hazard bar */
 .os-desktop::before {
-  content: '⚠  NERV SPECIAL AGENCY  //  MAGI SYSTEM INTERFACE  //  LEVEL 5 RESTRICTED  //  UNAUTHORIZED ACCESS DETECTED  //  INITIATING LOCKDOWN';
+  content: '⚠  THE FATHER SPECIAL AGENCY  //  MAGI SYSTEM INTERFACE  //  LEVEL 5 RESTRICTED  //  UNAUTHORIZED ACCESS DETECTED  //  INITIATING LOCKDOWN';
   position: absolute;
   top: 0; left: 0; right: 0;
   height: 32px;
@@ -950,45 +963,29 @@ body.state-blue #am-text {
 body.state-glitch #am-text { letter-spacing: 2px; }
 
 /* =========================================
-   TERMINAL INPUT — Command Entry
+   TERMINAL INPUT — classic command line
    ========================================= */
 #terminal-input-line {
   display: flex;
   align-items: center;
-  padding: 13px 24px;
-  border: 1px solid var(--clr-text-dim);
-  background: rgba(4, 10, 14, 0.8);
-  width: 78%;
-  max-width: 860px;
+  padding: 10px 0;
+  border: none;
+  background: transparent;
+  width: 90%;
+  max-width: 900px;
   position: relative;
-  margin-top: 16px;
+  margin-top: 30px;
   flex-shrink: 0;
-  clip-path: polygon(
-    0 0,
-    calc(100% - 10px) 0,
-    100% 10px,
-    100% 100%,
-    10px 100%,
-    0 calc(100% - 10px)
-  );
-  box-shadow:
-    0 0 25px rgba(240,144,58,0.06),
-    inset 0 0 15px rgba(0,0,0,0.6);
-  transition: border-color var(--state-transition);
+  clip-path: none;
+  box-shadow: none;
+  transition: none;
 }
 
-/* EVA corner tick accents (not clipped away) */
+/* Remove corner accents */
 #terminal-input-line::before,
 #terminal-input-line::after {
-  content: '';
-  position: absolute;
-  width: 10px; height: 10px;
-  border-style: solid;
-  border-color: var(--clr-accent);
-  opacity: 0.7;
+  display: none;
 }
-#terminal-input-line::before { top: 3px; left: 3px; border-width: 2px 0 0 2px; }
-#terminal-input-line::after  { bottom: 3px; right: 3px; border-width: 0 2px 2px 0; }
 
 /* Prompt character */
 .prompt-char {
@@ -1002,24 +999,22 @@ body.state-glitch #am-text { letter-spacing: 2px; }
   letter-spacing: 0;
 }
 
-/* Input field */
+/* Hard-Retro Input */
 #user-input {
   flex: 1;
   background: transparent;
   border: none;
-  border-bottom: 1px solid rgba(240, 144, 58, 0.2);
   color: var(--clr-text);
-  font-family: var(--font-data);
-  font-size: 1.1rem;
-  padding: 3px 8px;
+  font-family: var(--font-display);
+  font-size: 1.4rem;
+  padding: 0 10px;
   outline: none;
-  caret-color: var(--clr-accent);
+  caret-color: var(--clr-text);
   letter-spacing: 2px;
-  text-shadow: 0 0 6px var(--clr-glow);
-  transition: all 0.3s ease;
+  text-shadow: none;
 }
-#user-input:focus { border-bottom-color: var(--clr-text-dim); }
-#user-input::placeholder { color: var(--clr-text-dim); opacity: 0.35; letter-spacing: 4px; }
+
+#user-input::placeholder { color: var(--clr-text); opacity: 0.15; letter-spacing: 2px; }
 
 /* =========================================
    GHOST TEXT / VOICE STATUS
@@ -1208,3 +1203,75 @@ body.state-horror #background-manifestation {
 /* Distortion overlay */
 #dither-overlay.jitter { animation: dither-jitter 0.1s infinite; }
 @keyframes dither-jitter { 0%,100%{transform:translate(0,0)} 50%{transform:translate(1px,1px)} }
+
+/* Analog Horror: VHS Tracking */
+.analog-tracking {
+  animation: vhs-track 0.1s steps(2) infinite;
+}
+@keyframes vhs-track {
+  0%, 100% { transform: translateY(0) scaleY(1); filter: contrast(1); }
+  50% { transform: translateY(-15px) scaleY(1.05) skewX(2deg); filter: contrast(5) invert(0.05); }
+}
+
+/* Techno-Nihilist Overlay */
+#nihilist-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 10000;
+  display: none;
+  background: var(--eva-bg);
+  color: var(--clr-text);
+  font-family: var(--font-display);
+  font-size: 10vw;
+  font-weight: 900;
+  text-align: center;
+  line-height: 100vh;
+  letter-spacing: 20px;
+  pointer-events: none;
+  mix-blend-mode: color-dodge;
+  opacity: 0.9;
+}
+
+/* --- Phase 7: The Father's Wrath Intensity Scaling --- */
+
+:root {
+  --glitch-intensity: 0;
+}
+
+/* Rapid vibration and flicker for peak mania */
+.visual-hysteria {
+  animation: hysteria-vibration 0.05s infinite;
+}
+
+@keyframes hysteria-vibration {
+  0% { transform: translate(0, 0) scale(1.0); filter: contrast(120%) brightness(1.2); }
+  25% { transform: translate(-2px, 1px) scale(1.002); }
+  50% { transform: translate(1px, -2px) scale(0.998); filter: contrast(150%) brightness(1.5); }
+  75% { transform: translate(-1px, -1px) scale(1.001); }
+  100% { transform: translate(2px, 2px) scale(1.0); }
+}
+
+/* Scaling chromatic aberration based on --glitch-intensity */
+.glitch-chromatic-active {
+  filter: url(#chromatic-aberration-filter);
+  /* The filter itself should use the variable or the JS should trigger specific classes */
+}
+
+/* Forcing higher contrast/distortion at high intensity */
+body.visual-hysteria #terminal {
+  border-color: #ff2b00;
+  box-shadow: 0 0 calc(var(--glitch-intensity) * 20px) rgba(255, 43, 0, 0.5);
+}
+
+.glitch-shred {
+  animation: bg-shred 0.2s infinite;
+  opacity: 0.8;
+}
+
+@keyframes bg-shred {
+  0% { clip-path: inset(0 0 0 0); }
+  20% { clip-path: inset(10% 0 85% 0); transform: translateX(-5%); }
+  40% { clip-path: inset(80% 0 5% 0); transform: translateX(5%); }
+  60% { clip-path: inset(30% 0 60% 0); transform: translateX(-2%); }
+  100% { clip-path: inset(0 0 0 0); }
+}

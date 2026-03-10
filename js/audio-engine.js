@@ -19,6 +19,7 @@ const AudioEngine = (() => {
   // Speech-related nodes
   let speechDroneOsc = null;
   let speechDroneGain = null;
+  let activeSource = null; // Track currently playing speech buffer
 
   async function init() {
     if (isInitialized) return;
@@ -107,6 +108,8 @@ const AudioEngine = (() => {
 
     droneGain.gain.value = 0;
 
+    droneGain.filter = droneFilter; // Store for intensity scaling
+    
     modulator.connect(modGain);
     modGain.connect(carrier.frequency);
     
@@ -304,8 +307,20 @@ const AudioEngine = (() => {
   function setIntensity(level) {
     currentIntensity = Math.max(1, Math.min(10, level));
     if (droneGain) {
-      const droneVol = 0.15 + (currentIntensity / 10) * 0.3;
-      droneGain.gain.linearRampToValueAtTime(droneVol, ctx.currentTime + 0.5);
+      const droneVol = 0.15 + (currentIntensity / 10) * 0.45;
+      droneGain.gain.linearRampToValueAtTime(droneVol, ctx.currentTime + 1.5);
+      
+      // Oppressive filter shift
+      if (droneGain.filter) {
+        const filterFreq = 100 - (currentIntensity * 5);
+        droneGain.filter.frequency.linearRampToValueAtTime(filterFreq, ctx.currentTime + 2.0);
+      }
+    }
+    
+    if (masterGain && currentIntensity >= 9) {
+        masterGain.gain.linearRampToValueAtTime(0.8, ctx.currentTime + 0.5);
+    } else if (masterGain) {
+        masterGain.gain.linearRampToValueAtTime(0.6, ctx.currentTime + 0.5);
     }
   }
 
@@ -333,6 +348,9 @@ const AudioEngine = (() => {
         const source = ctx.createBufferSource();
         source.buffer = buffer;
         source.connect(masterGain);
+        
+        stopSpeech(); // Ensure previous is stopped
+        activeSource = source;
         
         // Fake utterance object for TextEngine compatibility
         const fakeUtterance = {
@@ -369,6 +387,23 @@ const AudioEngine = (() => {
     return speakTextLegacy(text);
   }
 
+  function stopSpeech() {
+    // Stop Web Audio (Kokoro)
+    if (activeSource) {
+      try {
+        activeSource.stop();
+        activeSource = null;
+      } catch (e) {}
+    }
+    
+    // Stop Web Speech (Fallback)
+    if ('speechSynthesis' in window) {
+      window.speechSynthesis.cancel();
+    }
+    
+    stopSpeechDrone();
+  }
+
   function speakTextLegacy(text) {
     if (!('speechSynthesis' in window)) return null;
     window.speechSynthesis.cancel();
@@ -385,10 +420,10 @@ const AudioEngine = (() => {
     );
     if (preferred) utterance.voice = preferred;
 
-    utterance.onstart = () => startSpeechDrone();
     utterance.onend = () => stopSpeechDrone();
     utterance.onerror = () => stopSpeechDrone();
 
+    stopSpeech(); // Clear any existing speech before starting
     window.speechSynthesis.speak(utterance);
     return utterance;
   }
@@ -580,7 +615,9 @@ const AudioEngine = (() => {
     playImpact,
     playTelemetry,
     setIntensity,
+    setIntensity,
     speakText,
+    stopSpeech,
     startSpeechDrone,
     stopSpeechDrone,
     startBackgroundHorror
