@@ -49,13 +49,22 @@ const VisualEngine = (() => {
 
   // Horror Image Categories (Expanded to use all images)
   const bgImages = {
-    low: ['AM1.jpg', 'am10.jpg', 'am4.jpg', 'face.jpg', 'am2.jpg'],
-    medium: ['eye1.jpg', 'eye2.jpg', 'eye3.jpg', 'eye4.jpg', 'am6.jpg', 'am8.jpg'],
+    low: ['AM1.jpg', 'am10.jpg', 'am4.jpg', 'face.jpg', 'am2.jpg', 'face2.jpg'],
+    medium: ['eye1.jpg', 'eye2.jpg', 'eye3.jpg', 'eye4.jpg', 'am6.jpg', 'am8.jpg', 'am11.jpg'],
     high: ['am7.jpg', 'am9.jpg', 'teeth1.jpg', 'hand.jpg', 'am5.jpg', 'am3.jpg'],
-    horror: ['am3.jpg', 'am7.jpg', 'teeth1.jpg', 'hand.jpg', 'face.jpg']
+    horror: ['am3.jpg', 'am7.jpg', 'teeth1.jpg', 'hand.jpg', 'face.jpg', 'face2.jpg']
+  };
+
+  // State-specific GIF backgrounds
+  const stateGifs = {
+    red: ['red_glitch.gif', 'gtitch_face.gif'],
+    void: ['void glitch.gif'],
+    blue: ['blue_am.gif'],
+    glitch: ['body_glitch.gif', 'body_glitch2.gif', 'am.gif']
   };
 
   let currentBgCategory = '';
+  let currentStateGif = '';
 
   /**
    * Technical GUI: Update atmospheric background image with Flash Glitch
@@ -75,14 +84,40 @@ const VisualEngine = (() => {
     // Swap rate depends on intensity (low = 8s, high = 1s)
     const swapInterval = Math.max(1000, 8000 - (intensity * 800));
 
-    // Swap if category changed OR enough time has passed
+    // Priority 1: State-specific GIFs for intense states
+    const hasStateGif = stateGifs[currentState];
+    const shouldShowGif = hasStateGif && (intensity >= 5 || forceHorror || Math.random() < 0.3);
+
+    if (shouldShowGif) {
+      const pool = stateGifs[currentState];
+      const gif = pool[Math.floor(Math.random() * pool.length)];
+      
+      if (gif !== currentStateGif || (now - lastImageSwapTime > swapInterval)) {
+        currentStateGif = gif;
+        lastImageSwapTime = now;
+        
+        bgLayer.classList.remove('flash-glitch-active');
+        void bgLayer.offsetWidth; // Force reflow
+        
+        bgLayer.style.backgroundImage = `url('images/${gif}')`;
+        bgLayer.style.filter = currentState === 'red' || currentState === 'glitch'
+          ? 'grayscale(0.5) contrast(200%) brightness(1.2)'
+          : 'grayscale(0.8) contrast(150%) brightness(0.8)';
+        bgLayer.style.opacity = intensity >= 8 ? '0.35' : '0.2';
+        bgLayer.classList.add('flash-glitch-active');
+      }
+      return;
+    }
+
+    // Priority 2: Standard JPG logic
     if (category !== currentBgCategory || (now - lastImageSwapTime > swapInterval)) {
       currentBgCategory = category;
       lastImageSwapTime = now;
+      currentStateGif = ''; // Reset gif tracking when falling back to JPGs
       
       let pool = bgImages[category];
       
-      // 20% chance to bleed an image from a different category to ensure they all get seen
+      // 20% chance to bleed an image from a different category
       if (Math.random() < 0.2 && !forceHorror) {
         const allKeys = Object.keys(bgImages);
         pool = bgImages[allKeys[Math.floor(Math.random() * allKeys.length)]];
@@ -90,9 +125,8 @@ const VisualEngine = (() => {
       
       const img = pool[Math.floor(Math.random() * pool.length)];
       
-      // INSTANT SWAP with Flash Glitch
       bgLayer.classList.remove('flash-glitch-active');
-      void bgLayer.offsetWidth; // Force reflow
+      void bgLayer.offsetWidth;
       
       bgLayer.style.backgroundImage = `url('images/${img}')`;
       bgLayer.style.filter = category === 'horror' 
@@ -102,7 +136,7 @@ const VisualEngine = (() => {
       
       bgLayer.classList.add('flash-glitch-active');
       if (intensity > 3 && Math.random() < 0.3) {
-        AudioEngine.playStatic(0.15); // Signal interruption sound only sometimes
+        AudioEngine.playStatic(0.15);
       }
     }
   }
@@ -379,27 +413,34 @@ const VisualEngine = (() => {
     if (!overlay || !img) return;
 
     let flashCount = 0;
+    const dreadGifs = ['eye5.gif', 'eye6.gif', 'heart.gif', 'gtitch_face.gif'];
+    
     const flashInterval = setInterval(() => {
-      if (flashCount > 4) {
+      if (flashCount > 5) {
         clearInterval(flashInterval);
         overlay.classList.add('hidden');
         overlay.style.backgroundColor = 'rgba(0,0,0,0.85)';
         overlay.style.filter = 'none';
+        img.src = '';
         return;
       }
 
-      // Procedural scare
-      const tempCanvas = document.createElement('canvas');
-      tempCanvas.width = 128;
-      tempCanvas.height = 128;
-      const tCtx = tempCanvas.getContext('2d');
-      
-      const r = Math.random();
-      if (r < 0.3) drawDistortedFace(tCtx, 128, 128);
-      else if (r < 0.6) drawStaringEye(tCtx, 128, 128);
-      else drawNoise(tCtx, 128, 128);
+      // Mix procedural and GIFs
+      if (Math.random() < 0.6) {
+        const gif = dreadGifs[Math.floor(Math.random() * dreadGifs.length)];
+        img.src = `images/${gif}`;
+      } else {
+        const tempCanvas = document.createElement('canvas');
+        tempCanvas.width = 128;
+        tempCanvas.height = 128;
+        const tCtx = tempCanvas.getContext('2d');
+        const r = Math.random();
+        if (r < 0.3) drawDistortedFace(tCtx, 128, 128);
+        else if (r < 0.6) drawStaringEye(tCtx, 128, 128);
+        else drawNoise(tCtx, 128, 128);
+        img.src = tempCanvas.toDataURL();
+      }
 
-      img.src = tempCanvas.toDataURL();
       overlay.classList.remove('hidden');
       overlay.style.backgroundColor = Math.random() < 0.5 ? '#fff' : '#000';
       overlay.style.filter = `invert(${Math.random() < 0.5 ? 1 : 0}) contrast(500%)`;
@@ -407,7 +448,7 @@ const VisualEngine = (() => {
       AudioEngine.playStatic(0.1);
       
       flashCount++;
-    }, 40); // Extremely fast (subliminal)
+    }, 50); 
   }
 
   function flashImage(type = 'noise') {
@@ -415,21 +456,38 @@ const VisualEngine = (() => {
     const img = document.getElementById('flash-image');
     if (!overlay) return;
 
-    const tempCanvas = document.createElement('canvas');
-    tempCanvas.width = 256;
-    tempCanvas.height = 256;
-    const tCtx = tempCanvas.getContext('2d');
+    // Use new GIFs if available for the type
+    if (type === 'eye' && Math.random() < 0.7) {
+      const eyeGifs = ['eye5.gif', 'eye6.gif'];
+      img.src = `images/${eyeGifs[Math.floor(Math.random() * eyeGifs.length)]}`;
+    } else if (type === 'heart') {
+      img.src = 'images/heart.gif';
+    } else if (type === 'hand' && Math.random() < 0.4) {
+       img.src = 'images/hand.jpg'; // Keep static hand for variety or find a hand gif
+    } else {
+      // Procedural fallback
+      const tempCanvas = document.createElement('canvas');
+      tempCanvas.width = 256;
+      tempCanvas.height = 256;
+      const tCtx = tempCanvas.getContext('2d');
 
-    if (type === 'eye') drawStaringEye(tCtx, 256, 256);
-    else if (type === 'hand') drawReachingHand(tCtx, 256, 256);
-    else drawDistortedFace(tCtx, 256, 256);
+      if (type === 'eye') drawStaringEye(tCtx, 256, 256);
+      else if (type === 'hand') drawReachingHand(tCtx, 256, 256);
+      else drawDistortedFace(tCtx, 256, 256);
 
-    img.src = tempCanvas.toDataURL();
+      img.src = tempCanvas.toDataURL();
+    }
+
     overlay.classList.remove('hidden');
+    overlay.style.filter = Math.random() < 0.3 ? 'invert(1) contrast(200%)' : 'none';
 
     AudioEngine.playStatic(0.2);
     AudioEngine.playImpact();
-    setTimeout(() => overlay.classList.add('hidden'), 150);
+    setTimeout(() => {
+      overlay.classList.add('hidden');
+      overlay.style.filter = 'none';
+      img.src = ''; // Clear src
+    }, 150);
   }
 
   function triggerDataGlitch(duration = 500) {

@@ -479,15 +479,18 @@ body::after {
 /* =========================================
    HEARTBEAT MONITOR
    ========================================= */
-#heartbeat-container {
+#background-manifestation {
   position: fixed;
-  top: 8px; right: 60px;
-  width: 140px; height: 44px;
-  z-index: 200;
-  opacity: 0.55;
+  top: 0; left: 0;
+  width: 100%; height: 100%;
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  opacity: 0.15;
+  z-index: 1;
   pointer-events: none;
-  filter: drop-shadow(0 0 4px var(--clr-glow));
-  transition: filter 0.5s;
+  transition: opacity 1s ease, filter 0.5s ease;
+  mix-blend-mode: screen;
 }
 #heartbeat-svg { width: 100%; height: 100%; }
 #heartbeat-path {
