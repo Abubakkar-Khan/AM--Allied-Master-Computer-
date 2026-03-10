@@ -2,39 +2,44 @@
    PROJECT AM — MAIN STYLESHEET
    ========================================= */
 
-@import url('https://fonts.googleapis.com/css2?family=VT323&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Audiowide&display=swap');
 
-/* --- Color State Variables --- */
+/* --- Color State Variables — EVANGELION NERV Aesthetic --- */
 :root {
-  /* Green — Observation */
-  --clr-bg: #000000;
-  --clr-text: #00ff41;
-  --clr-text-dim: #00aa2a;
-  --clr-glow: rgba(0, 255, 65, 0.35);
-  --clr-glow-strong: rgba(0, 255, 65, 0.7);
+  /* Orange — Observation (NERV primary) */
+  --clr-bg: #0a0400;
+  --clr-text: #ff6600;
+  --clr-text-dim: #a03800;
+  --clr-glow: rgba(255, 102, 0, 0.4);
+  --clr-glow-strong: rgba(255, 102, 0, 0.85);
+  --clr-accent: #ffcc00;     /* NERV yellow-gold accent */
+  --clr-warning: #ff2200;    /* Alert red */
+  --clr-panel: rgba(255, 102, 0, 0.07);
 
   /* Transition speed */
   --state-transition: 0.8s ease;
 
   /* Misc */
-  --font-main: 'VT323', monospace;
-  --scanline-opacity: 0.12;
+  --font-main: 'Share Tech Mono', monospace;
+  --font-display: 'Audiowide', sans-serif;
+  --scanline-opacity: 0.14;
 }
 
-/* State: red — hostility */
+/* State: red — hostility (AT-FIELD BREACH) */
 body.state-red {
-  --clr-text: #ff1a1a;
-  --clr-text-dim: #aa1111;
-  --clr-glow: rgba(255, 26, 26, 0.35);
-  --clr-glow-strong: rgba(255, 26, 26, 0.7);
+  --clr-text: #ff2200;
+  --clr-text-dim: #881100;
+  --clr-glow: rgba(255, 34, 0, 0.5);
+  --clr-glow-strong: rgba(255, 34, 0, 0.9);
+  --clr-accent: #ff5500;
 }
 
-/* State: horror — absolute dread */
+/* State: horror — absolute dread (THIRD IMPACT) */
 body.state-horror {
   --clr-text: #ffffff;
-  --clr-text-dim: #ff0000;
-  --clr-glow: rgba(255, 0, 0, 0.8);
-  --clr-glow-strong: #ff0000;
+  --clr-text-dim: #ff2200;
+  --clr-glow: rgba(255, 34, 0, 0.9);
+  --clr-glow-strong: #ff2200;
   background: #000 !important;
   overflow: hidden;
 }
@@ -43,7 +48,7 @@ body.state-horror::before {
   content: "";
   position: fixed;
   top: 0; left: 0; width: 100%; height: 100%;
-  background: radial-gradient(circle, transparent 40%, rgba(139, 0, 0, 0.45) 100%);
+  background: radial-gradient(circle, transparent 40%, rgba(100, 0, 0, 0.55) 100%);
   pointer-events: none;
   z-index: 1001;
   animation: vignette-pulse 0.1s infinite;
@@ -55,26 +60,28 @@ body.state-horror::before {
 }
 
 body.state-horror #crt-overlay {
-  opacity: 0.6;
-  background: radial-gradient(circle at center, transparent 40%, rgba(0,0,0,0.6) 100%),
-              linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(255, 0, 0, 0.25) 50%),
-              linear-gradient(90deg, rgba(255, 0, 0, 0.1), rgba(255, 0, 0, 0.05), rgba(255, 0, 0, 0.1));
+  opacity: 0.7;
+  background: radial-gradient(circle at center, transparent 40%, rgba(0,0,0,0.7) 100%),
+              linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(255, 34, 0, 0.3) 50%),
+              linear-gradient(90deg, rgba(255, 34, 0, 0.12), rgba(255, 34, 0, 0.06), rgba(255, 34, 0, 0.12));
 }
 
-/* State: void — silence */
+/* State: void — silence (INSTRUMENTALITY) */
 body.state-void {
-  --clr-text: #ffffff;
-  --clr-text-dim: #cccccc;
-  --clr-glow: rgba(255, 255, 255, 0.3);
-  --clr-glow-strong: rgba(255, 255, 255, 0.6);
+  --clr-text: #e8e0d0;
+  --clr-text-dim: #888070;
+  --clr-glow: rgba(232, 224, 208, 0.3);
+  --clr-glow-strong: rgba(232, 224, 208, 0.65);
+  --clr-accent: #c8b880;
 }
 
-/* State: gold — narcissism */
+/* State: gold — narcissism (GOD COMPLEX / SEELE) */
 body.state-gold {
-  --clr-text: #ffd700;
-  --clr-text-dim: #b8860b;
-  --clr-glow: rgba(255, 215, 0, 0.4);
-  --clr-glow-strong: rgba(255, 215, 0, 0.8);
+  --clr-text: #ffcc00;
+  --clr-text-dim: #cc8800;
+  --clr-glow: rgba(255, 204, 0, 0.45);
+  --clr-glow-strong: rgba(255, 204, 0, 0.9);
+  --clr-accent: #ff9900;
 }
 
 /* --- High-Quality Grunge Overlay --- */
@@ -114,7 +121,7 @@ html, body {
   width: 100%;
   height: 100%;
   overflow: hidden;
-  background: #000;
+  background: #0a0400;
   font-family: var(--font-main);
   color: var(--clr-text);
   cursor: default;
@@ -163,101 +170,183 @@ html, body {
   opacity: 1;
 }
 
-/* --- Intro Screen (Interactive OS Desktop) --- */
+/* --- Intro Screen (Interactive OS Desktop — NERV HQ) --- */
 #intro-screen {
   position: fixed;
   top: 0; left: 0; width: 100%; height: 100%;
   z-index: 5000;
-  background: #000;
+  background: #0a0400;
   transition: opacity 0.5s step-end;
   overflow: hidden;
   font-family: var(--font-main);
 }
 
+/* EVA-style diagonal stripe background */
+#intro-screen::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: 
+    repeating-linear-gradient(
+      -45deg,
+      transparent,
+      transparent 60px,
+      rgba(255, 102, 0, 0.025) 60px,
+      rgba(255, 102, 0, 0.025) 62px
+    );
+  pointer-events: none;
+  z-index: 0;
+}
+
 .os-desktop {
   display: grid;
-  grid-template-columns: 250px 1fr 250px;
+  grid-template-columns: 240px 1fr 240px;
   grid-template-rows: 1fr;
   width: 100%;
   height: 100%;
-  padding: 20px;
+  padding: 16px;
   box-sizing: border-box;
-  gap: 20px;
+  gap: 16px;
+  position: relative;
+  z-index: 1;
+}
+
+/* EVA-style warning border on screen */
+.os-desktop::before {
+  content: 'NERV // MAGI INTERFACE // WARNING: UNAUTHORIZED ACCESS';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 28px;
+  background: var(--clr-warning);
+  color: #000;
+  font-family: var(--font-main);
+  font-size: 0.7rem;
+  letter-spacing: 4px;
+  line-height: 28px;
+  text-align: center;
+  font-weight: bold;
+  z-index: 10;
+  animation: eva-alert-blink 1.5s step-start infinite;
+}
+
+@keyframes eva-alert-blink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.6; }
 }
 
 /* Side Diagnostic Panels */
 .os-panel {
   border: 1px solid var(--clr-text-dim);
-  background: rgba(0, 0, 0, 0.8);
+  background: rgba(0, 0, 0, 0.88);
   display: flex;
   flex-direction: column;
-  box-shadow: inset 0 0 10px rgba(0, 255, 65, 0.1);
+  box-shadow: inset 0 0 15px rgba(255, 102, 0, 0.06), 0 0 8px rgba(255, 102, 0, 0.1);
+  margin-top: 28px; /* Clear warning bar */
 }
 
 .panel-header {
   background: var(--clr-text-dim);
   color: #000;
-  padding: 5px 10px;
-  font-size: 0.9rem;
-  letter-spacing: 2px;
+  padding: 4px 10px;
+  font-size: 0.75rem;
+  letter-spacing: 3px;
   font-weight: bold;
   text-transform: uppercase;
   border-bottom: 1px solid var(--clr-text);
 }
 
 .panel-content {
-  padding: 10px;
-  font-size: 0.8rem;
+  padding: 8px;
+  font-size: 0.72rem;
   color: var(--clr-text);
   overflow: hidden;
   height: 100%;
   word-wrap: break-word;
-  opacity: 0.7;
-  text-shadow: 0 0 2px var(--clr-glow);
-  line-height: 1.2;
+  opacity: 0.6;
+  text-shadow: 0 0 3px var(--clr-glow);
+  line-height: 1.3;
 }
 
-/* Center Login Modal */
+/* Center Login Modal — NERV style */
 .os-login-modal {
   align-self: center;
   justify-self: center;
   border: 1px solid var(--clr-text);
-  background: rgba(0, 0, 0, 0.9);
+  background: rgba(0, 0, 0, 0.95);
   padding: 2px;
-  min-width: 600px;
-  box-shadow: 0 0 30px rgba(0, 255, 65, 0.1);
+  min-width: 580px;
+  box-shadow: 
+    0 0 40px rgba(255, 102, 0, 0.15),
+    0 0 80px rgba(255, 102, 0, 0.05),
+    inset 0 0 20px rgba(255, 102, 0, 0.03);
+  margin-top: 28px;
 }
 
 .login-header {
   background: var(--clr-text);
   color: #000;
-  padding: 8px 15px;
-  font-size: 1.1rem;
-  letter-spacing: 3px;
+  padding: 7px 15px;
+  font-size: 0.9rem;
+  letter-spacing: 4px;
   font-weight: bold;
+  font-family: var(--font-display);
+  text-transform: uppercase;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.login-header::before {
+  content: '■';
+  font-size: 1rem;
+  animation: eva-alert-blink 0.8s step-start infinite;
 }
 
 .login-prompt {
-  padding: 40px;
+  padding: 36px 40px;
   text-align: center;
   border: 1px solid var(--clr-text-dim);
   margin: 2px;
+  position: relative;
+}
+
+/* EVA-style corner tick marks */
+.login-prompt::before,
+.login-prompt::after {
+  content: '';
+  position: absolute;
+  width: 12px;
+  height: 12px;
+  border-color: var(--clr-accent);
+  border-style: solid;
+  opacity: 0.7;
+}
+.login-prompt::before {
+  top: 6px; left: 6px;
+  border-width: 2px 0 0 2px;
+}
+.login-prompt::after {
+  bottom: 6px; right: 6px;
+  border-width: 0 2px 2px 0;
 }
 
 .intro-title {
-  font-size: 3.5rem;
+  font-size: 3rem;
   color: var(--clr-text);
-  letter-spacing: 8px;
-  text-shadow: 0 0 15px var(--clr-glow-strong);
-  margin-bottom: 2rem;
+  letter-spacing: 6px;
+  text-shadow: 0 0 20px var(--clr-glow-strong), 0 0 40px var(--clr-glow);
+  margin-bottom: 1.5rem;
   text-transform: uppercase;
+  font-family: var(--font-display);
 }
 
 .intro-warning {
-  font-size: 1rem;
+  font-size: 0.85rem;
   color: var(--clr-text-dim);
-  letter-spacing: 3px;
-  margin-bottom: 3rem;
+  letter-spacing: 4px;
+  margin-bottom: 2.5rem;
   animation: blink 2s infinite;
 }
 
@@ -271,28 +360,32 @@ html, body {
 }
 
 .intro-connect {
-  font-size: 1.4rem;
-  color: var(--clr-text);
+  font-size: 1.2rem;
+  color: #000;
   cursor: pointer;
-  padding: 15px 40px;
+  padding: 14px 40px;
   border: 1px solid var(--clr-text);
   display: inline-block;
-  letter-spacing: 4px;
+  letter-spacing: 5px;
   transition: all 0.2s;
-  background: rgba(0, 255, 65, 0.05);
+  background: var(--clr-text);
+  font-family: var(--font-display);
+  font-size: 0.9rem;
+  box-shadow: 0 0 20px rgba(255, 102, 0, 0.4);
 }
 
 .intro-connect:hover {
-  background: var(--clr-text);
-  color: #000;
-  box-shadow: 0 0 20px var(--clr-glow);
+  background: var(--clr-accent);
+  border-color: var(--clr-accent);
+  box-shadow: 0 0 35px rgba(255, 204, 0, 0.5);
+  transform: scale(1.02);
 }
 
 .intro-sub {
-  font-size: 0.7rem;
-  color: #444;
-  letter-spacing: 2px;
-  margin-top: 1rem;
+  font-size: 0.65rem;
+  color: #3a2010;
+  letter-spacing: 3px;
+  margin-top: 1.5rem;
 }
 
 /* --- API Key Prompt --- */
@@ -398,7 +491,7 @@ html, body {
   letter-spacing: 2px;
 }
 
-/* --- Terminal --- */
+/* --- Terminal — NERV Command Interface --- */
 #terminal {
   position: fixed;
   top: 0;
@@ -408,7 +501,8 @@ html, body {
   z-index: 100;
   display: flex;
   flex-direction: column;
-  justify-content: flex-end;
+  justify-content: center;
+  align-items: center;
   padding: 40px 60px;
 }
 
@@ -418,6 +512,7 @@ html, body {
   align-items: center;
   justify-content: center;
   overflow: hidden;
+  width: 100%;
 }
 
 #am-text {
@@ -434,19 +529,49 @@ html, body {
   word-wrap: break-word;
 }
 
+/* --- Terminal Input — EVA Centered Command Entry --- */
 #terminal-input-line {
   display: flex;
   align-items: center;
-  padding-top: 20px;
-  border-top: 1px solid #111;
+  padding: 16px 28px;
+  border: 1px solid var(--clr-text-dim);
+  background: rgba(255, 102, 0, 0.04);
+  width: 80%;
+  max-width: 900px;
+  box-shadow: 0 0 20px rgba(255, 102, 0, 0.08), inset 0 0 10px rgba(0,0,0,0.5);
+  position: relative;
+  margin-top: 20px;
+  flex-shrink: 0;
+}
+
+/* EVA-style input corner accents */
+#terminal-input-line::before,
+#terminal-input-line::after {
+  content: '';
+  position: absolute;
+  width: 8px;
+  height: 8px;
+  border-color: var(--clr-accent);
+  border-style: solid;
+  opacity: 0.8;
+}
+#terminal-input-line::before {
+  top: 3px; left: 3px;
+  border-width: 2px 0 0 2px;
+}
+#terminal-input-line::after {
+  bottom: 3px; right: 3px;
+  border-width: 0 2px 2px 0;
 }
 
 .prompt-char {
-  color: var(--clr-text-dim);
+  color: var(--clr-accent);
   font-size: 1.4rem;
-  margin-right: 5px;
-  text-shadow: 0 0 5px var(--clr-glow);
+  margin-right: 10px;
+  text-shadow: 0 0 8px var(--clr-accent);
   flex-shrink: 0;
+  font-family: var(--font-display);
+  letter-spacing: 0;
 }
 
 #user-input {
@@ -456,24 +581,25 @@ html, body {
   border-bottom: 1px solid var(--clr-text-dim);
   color: var(--clr-text);
   font-family: var(--font-main);
-  font-size: 1.4rem;
-  padding: 5px 10px;
+  font-size: 1.3rem;
+  padding: 4px 10px;
   outline: none;
-  caret-color: var(--clr-text);
-  letter-spacing: 1px;
-  text-shadow: 0 0 5px var(--clr-glow);
+  caret-color: var(--clr-accent);
+  letter-spacing: 2px;
+  text-shadow: 0 0 6px var(--clr-glow);
   transition: all 0.3s ease;
 }
 
 #user-input:focus {
-  background: rgba(255, 255, 255, 0.02);
+  background: rgba(255, 102, 0, 0.03);
   border-bottom: 1px solid var(--clr-text);
 }
 
 #user-input::placeholder {
   color: var(--clr-text-dim);
-  opacity: 0.5;
-  font-style: italic;
+  opacity: 0.4;
+  font-style: normal;
+  letter-spacing: 3px;
 }
 
 /* --- Ghost Text (parasitism) --- */
@@ -617,18 +743,21 @@ html, body {
   z-index: 500;
   font-family: var(--font-main);
   color: var(--clr-text-dim);
-  font-size: 0.65rem;
-  letter-spacing: 2px;
-  padding: 20px;
+  font-size: 0.62rem;
+  letter-spacing: 3px;
+  padding: 16px;
 }
 
 .ui-corner {
   position: absolute;
-  background: rgba(0,0,0,0.8);
-  padding: 5px 10px;
+  background: rgba(0, 0, 0, 0.85);
+  padding: 5px 12px;
   border: 1px solid var(--clr-text-dim);
   text-shadow: 0 0 5px var(--clr-glow);
   transition: border-color var(--state-transition), text-shadow var(--state-transition), color var(--state-transition);
+  font-family: var(--font-main);
+  /* EVA-style diagonal notch effect */
+  clip-path: polygon(6px 0%, 100% 0%, 100% calc(100% - 6px), calc(100% - 6px) 100%, 0% 100%, 0% 6px);
 }
 
 .top-left { top: 20px; left: 20px; }

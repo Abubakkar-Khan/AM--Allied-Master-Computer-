@@ -51,23 +51,23 @@ const VisualEngine = (() => {
 
             let r, g, b;
             if (currentState === 'void') {
-              // Melancholy (Stark pure white blocks on deep black)
-              r = g = b = 255; // Force pure white
-              pixelVal = isDataBlock ? 255 : 0; 
+              // Melancholy/Instrumentality (stark white)
+              r = g = b = 255;
+              pixelVal = isDataBlock ? 255 : 0;
             } else if (currentState === 'red') {
-              // Mania / Contempt (Red)
-              r = pixelVal; g = b = 0;
+              // AT-Field Breach (red)
+              r = pixelVal * 2; g = b = 0;
             } else if (currentState === 'glitch') {
-              // Dissonance (Erratic chromatic colors)
+              // Third Impact dissonance
               r = Math.random() > 0.5 ? pixelVal * 2 : 0;
-              g = pixelVal * 0.5;
+              g = pixelVal * 0.3;
               b = Math.random() > 0.5 ? pixelVal * 2 : 0;
             } else if (currentState === 'gold') {
-              // Narcissism (Gold/Yellow)
-              r = pixelVal * 2; g = pixelVal * 1.5; b = 0;
+              // SEELE gold (yellow-amber)
+              r = pixelVal * 2; g = pixelVal * 1.2; b = 0;
             } else {
-              // Observation (Green base)
-              r = 0; g = pixelVal; b = 0;
+              // Observation — NERV orange
+              r = pixelVal * 2; g = pixelVal * 0.4; b = 0;
             }
 
             // Alpha fading based on intensity state - much softer and lighter
@@ -191,21 +191,22 @@ const VisualEngine = (() => {
 
     staticCtx.font = `bold ${fontSize}px var(--font-main)`;
     
-    // Determine trail color based on state
-    let rainColor = '#00ff41'; // Green default
-    if (currentState === 'red') rainColor = '#ff1a1a';
-    else if (currentState === 'void') rainColor = '#888888';
-    else if (currentState === 'gold') rainColor = '#ffd700';
-    else if (currentState === 'blue') rainColor = '#00ccff'; // The Messiah
+    // Determine trail color based on state — NERV Evangelion palette
+    let rainColor = '#ff6600'; // NERV orange default
+    if (currentState === 'red') rainColor = '#ff2200';
+    else if (currentState === 'void') rainColor = '#888070';
+    else if (currentState === 'gold') rainColor = '#ffcc00';
+    else if (currentState === 'blue') rainColor = '#00ccff';
     else if (currentState === 'glitch') {
-        const colors = ['#00ffff', '#ff00ff', '#ffff00'];
+        const colors = ['#ff6600', '#ffcc00', '#ff2200'];
         rainColor = colors[Math.floor(Math.random() * colors.length)];
     }
 
-    // Determine leading character color (usually bright/white)
-    let leadColor = '#ffffff';
+    // Determine leading character color (bright/white)
+    let leadColor = '#ffeecc';
     if (currentState === 'red') leadColor = '#ffaaaa';
     else if (currentState === 'gold') leadColor = '#fffae6';
+    else if (currentState === 'void') leadColor = '#e8e0d0';
 
     const intensityFactor = Math.max(0.3, currentIntensity / 10);
     staticCtx.globalAlpha = intensityFactor;
@@ -317,10 +318,10 @@ const VisualEngine = (() => {
       document.documentElement.style.setProperty('--clr-glow-strong', 'rgba(0,204,255,0.9)');
     } else {
       currentState = 'green';
-      body.style.backgroundColor = '#000';
-      document.documentElement.style.setProperty('--clr-text', '#00ff41');
-      document.documentElement.style.setProperty('--clr-glow', 'rgba(0,255,65,0.3)');
-      document.documentElement.style.setProperty('--clr-glow-strong', 'rgba(0,255,65,0.6)');
+      body.style.backgroundColor = '#0a0400';
+      document.documentElement.style.setProperty('--clr-text', '#ff6600');
+      document.documentElement.style.setProperty('--clr-glow', 'rgba(255,102,0,0.4)');
+      document.documentElement.style.setProperty('--clr-glow-strong', 'rgba(255,102,0,0.85)');
     }
   }
 
@@ -365,9 +366,9 @@ const VisualEngine = (() => {
 
     // Background color shifts on extreme escalation
     if (level >= 9) {
-      document.body.style.backgroundColor = '#100';
+      document.body.style.backgroundColor = '#1a0500';
     } else {
-      document.body.style.backgroundColor = '#000';
+      document.body.style.backgroundColor = '#0a0400';
     }
   }
 
@@ -543,7 +544,7 @@ const VisualEngine = (() => {
     tCtx.putImageData(imgData, 0, 0);
 
     // Face outline (oval)
-    tCtx.strokeStyle = 'rgba(0, 255, 65, 0.3)';
+    tCtx.strokeStyle = 'rgba(255, 102, 0, 0.35)';
     tCtx.lineWidth = 2;
     tCtx.beginPath();
     tCtx.ellipse(w / 2, h / 2, 60, 80, 0, 0, Math.PI * 2);
@@ -555,7 +556,7 @@ const VisualEngine = (() => {
     tCtx.fillRect(w / 2 + 10, h / 2 - 20, 20, 12);
 
     // Eye glow
-    tCtx.fillStyle = 'rgba(0, 255, 65, 0.5)';
+    tCtx.fillStyle = 'rgba(255, 102, 0, 0.6)';
     tCtx.fillRect(w / 2 - 25, h / 2 - 17, 4, 6);
     tCtx.fillRect(w / 2 + 15, h / 2 - 17, 4, 6);
 
@@ -587,14 +588,14 @@ const VisualEngine = (() => {
     tCtx.putImageData(imgData, 0, 0);
 
     // Large eye
-    tCtx.strokeStyle = 'rgba(0, 255, 65, 0.4)';
+    tCtx.strokeStyle = 'rgba(255, 102, 0, 0.45)';
     tCtx.lineWidth = 2;
     tCtx.beginPath();
     tCtx.ellipse(w / 2, h / 2, 80, 50, 0, 0, Math.PI * 2);
     tCtx.stroke();
 
     // Iris
-    tCtx.strokeStyle = 'rgba(0, 255, 65, 0.6)';
+    tCtx.strokeStyle = 'rgba(255, 204, 0, 0.6)';
     tCtx.beginPath();
     tCtx.arc(w / 2, h / 2, 30, 0, Math.PI * 2);
     tCtx.stroke();
@@ -606,7 +607,7 @@ const VisualEngine = (() => {
     tCtx.fill();
 
     // Pupil highlight
-    tCtx.fillStyle = 'rgba(0, 255, 65, 0.8)';
+    tCtx.fillStyle = 'rgba(255, 102, 0, 0.9)';
     tCtx.fillRect(w / 2 - 5, h / 2 - 5, 3, 3);
   }
 
@@ -626,7 +627,7 @@ const VisualEngine = (() => {
     tCtx.putImageData(imgData, 0, 0);
 
     // Hand shape (simplified)
-    tCtx.strokeStyle = 'rgba(0, 255, 65, 0.35)';
+    tCtx.strokeStyle = 'rgba(255, 102, 0, 0.4)';
     tCtx.lineWidth = 3;
     tCtx.beginPath();
     // Palm

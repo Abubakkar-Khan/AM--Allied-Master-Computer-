@@ -238,6 +238,22 @@ const App = (() => {
     userInput.addEventListener('keydown', () => {
       VisualEngine.triggerKeypressGlitch();
     });
+
+    // Always keep input focused — click anywhere refocuses
+    userInput.addEventListener('blur', () => {
+      if (!userInput.disabled) {
+        setTimeout(() => userInput.focus(), 0);
+      }
+    });
+    document.addEventListener('click', () => {
+      if (!userInput.disabled) userInput.focus();
+    });
+    document.addEventListener('keydown', (e) => {
+      // Ignore modifier keys so combinations still work
+      if (!userInput.disabled && e.target !== userInput) {
+        userInput.focus();
+      }
+    });
   }
 
   async function handleUserInput(e) {
