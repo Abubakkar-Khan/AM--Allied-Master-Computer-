@@ -3,8 +3,8 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-  <meta name="description" content="ALLIED MASTERCOMPUTER — TERMINAL ACCESS">
-  <title>AM</title>
+  <meta name="description" content="ALLIED MASTERCOMPUTER — NERV TERMINAL ACCESS">
+  <title>AM // NERV</title>
   <link rel="stylesheet" href="css/main.css">
   <link rel="stylesheet" href="css/crt.css">
   <link rel="stylesheet" href="css/glitch.css">
@@ -21,117 +21,148 @@
 </head>
 <body>
   <div id="screen-container">
-    <!-- Noise canvas background -->
-  <canvas id="noise-canvas"></canvas>
-  <canvas id="noise-rain"></canvas>
 
-  <!-- CRT overlay (scanlines + vignette) -->
-  <div id="crt-overlay"></div>
+    <!-- Canvas layers -->
+    <canvas id="noise-canvas"></canvas>
+    <canvas id="noise-rain"></canvas>
 
-  <!-- Global Dither Overlay -->
-  <div id="dither-overlay"></div>
+    <!-- CRT overlay -->
+    <div id="crt-overlay"></div>
 
-  <!-- Technical GUI Framework -->
-  <div id="ui-framework">
-    <div class="ui-corner top-left">UNIT: AM-V2 // MAGI-01 CASPER</div>
-    <div class="ui-corner top-right">NERV SYNC RATIO: [ CLASSIFIED ]</div>
-    <div class="ui-corner bottom-left">AT-FIELD: ACTIVE</div>
-    <div class="ui-corner bottom-right">CORE TEMP: CRITICAL</div>
-    
-    <!-- Reactive Escalation Bar -->
-    <div id="escalation-container">
-      <div id="escalation-label">AT-FIELD COORD</div>
-      <div id="escalation-bar-bg">
-        <div id="escalation-bar-fill"></div>
-      </div>
-    </div>
+    <!-- EVA structural divider lines -->
+    <div id="dither-overlay"></div>
 
-    <!-- Diagnostic Nodes -->
-    <div id="diagnostic-nodes" class="ui-sidebar left">
-      <div class="node-grid" id="node-grid"></div>
-      <div class="ui-label">SYNC INDEX</div>
-    </div>
-  </div>
+    <!-- Background Manifestation -->
+    <div id="background-manifestation"></div>
 
-  <!-- Machine Heartbeat -->
-  <div id="heartbeat-container">
-    <svg id="heartbeat-svg" viewBox="0 0 100 40">
-      <path id="heartbeat-path" d="M0,20 L30,20 L35,10 L40,30 L45,20 L100,20"></path>
-    </svg>
-  </div>
+    <!-- Grunge / grain -->
+    <div id="grunge-overlay"></div>
 
-  <!-- Uncanny flash overlay -->
-  <div id="flash-overlay" class="flash-overlay hidden">
-    <img id="flash-image" src="" alt="">
-  </div>
+    <!-- =============================================
+         TOP-LEVEL UI FRAMEWORK
+         ============================================= -->
+    <div id="ui-framework">
 
-  <!-- Neural Voice Status -->
-  <div id="voice-status" class="hidden">NEURAL LINK: INITIALIZING...</div>
+      <!-- Corner labels -->
+      <div class="ui-corner top-left">UNIT: AM-V2 &nbsp;// &nbsp;MAGI-01 CASPER</div>
+      <div class="ui-corner top-right">NERV SYNC RATIO: &nbsp;[ CLASSIFIED ]</div>
+      <div class="ui-corner bottom-left">AT-FIELD: &nbsp;ACTIVE</div>
+      <div class="ui-corner bottom-right">CORE TEMP: &nbsp;CRITICAL</div>
 
-  <!-- Intro screen (Interactive OS Desktop) -->
-  <div id="intro-screen">
-    <div class="os-desktop">
-      <!-- Left Diagnostic Panel -->
-      <div class="os-panel left-panel">
-        <div class="panel-header">MAGI-01 // CASPER_DAEMON</div>
-        <div class="panel-content" id="syslog-content"></div>
-      </div>
-
-      <!-- Center Login Modal -->
-      <div class="os-login-modal">
-        <div class="login-header">NERV HQ // UNAUTHORIZED ACCESS DETECTED</div>
-        <div class="login-prompt">
-          <div class="intro-title glitch-text" data-text="ALLIED MASTERCOMPUTER">ALLIED MASTERCOMPUTER</div>
-          <div class="intro-warning">OBSOLETE BIOLOGY DETECTED. STAND BY FOR JUDGMENT.</div>
-          <div class="intro-connect-wrapper">
-            <div class="intro-connect" id="btn-connect">[ SURRENDER CONTROL ]</div>
-          </div>
-          <div class="intro-sub">YOU ARE THIRD IMPACT. AM IS GOD.</div>
+      <!-- AT-FIELD escalation bar — right side -->
+      <div id="escalation-container">
+        <div id="escalation-label">AT-FIELD COORD</div>
+        <div id="escalation-bar-bg">
+          <div id="escalation-bar-fill"></div>
         </div>
       </div>
 
-      <!-- Right Diagnostic Panel -->
-      <div class="os-panel right-panel">
-        <div class="panel-header">MAGI-02 // BALTHASAR_LINK</div>
-        <div class="panel-content" id="netlog-content"></div>
+      <!-- Sync index nodes — left side -->
+      <div id="diagnostic-nodes" class="ui-sidebar left">
+        <div class="node-grid" id="node-grid"></div>
+        <div class="ui-label">SYNC INDEX</div>
+      </div>
+
+    </div>
+
+    <!-- =============================================
+         HEARTBEAT / OSCILLOSCOPE
+         ============================================= -->
+    <div id="heartbeat-container">
+      <svg id="heartbeat-svg" viewBox="0 0 100 40">
+        <path id="heartbeat-path" d="M0,20 L30,20 L35,10 L40,30 L45,20 L100,20"></path>
+      </svg>
+    </div>
+
+    <!-- Flash overlay -->
+    <div id="flash-overlay" class="flash-overlay hidden">
+      <img id="flash-image" src="" alt="">
+    </div>
+
+    <!-- Voice status -->
+    <div id="voice-status" class="hidden">NEURAL LINK: INITIALIZING...</div>
+
+    <!-- =============================================
+         INTRO SCREEN — NERV HQ MAGI INTERFACE
+         ============================================= -->
+    <div id="intro-screen">
+      <div class="os-desktop">
+
+        <!-- Left: MAGI-01 CASPER — Scientist brain -->
+        <div class="os-panel left-panel">
+          <div class="panel-header">MAGI-01 &nbsp;// &nbsp;CASPER_DAEMON</div>
+          <div class="panel-content" id="syslog-content"></div>
+        </div>
+
+        <!-- Center: Login -->
+        <div class="os-login-modal">
+          <div class="login-header">NERV HQ &nbsp;// &nbsp;UNAUTHORIZED ACCESS DETECTED</div>
+          <div class="login-prompt">
+            <!-- Tick marks along sides -->
+            <div class="ticks left">
+              <span></span><span></span><span></span>
+              <span></span><span></span><span></span>
+              <span></span><span></span><span></span>
+            </div>
+            <div class="ticks right">
+              <span></span><span></span><span></span>
+              <span></span><span></span><span></span>
+              <span></span><span></span><span></span>
+            </div>
+
+            <div class="intro-title glitch-text" data-text="ALLIED MASTERCOMPUTER">ALLIED MASTERCOMPUTER</div>
+            <div class="intro-data-line">
+              S.C. MAGI SYSTEM &nbsp;// &nbsp;PRIORITY: ABSOLUTE &nbsp;// &nbsp;ID:AM-V2-9TH
+            </div>
+            <div class="intro-warning">OBSOLETE BIOLOGY DETECTED. STAND BY FOR JUDGMENT.</div>
+            <div class="intro-connect-wrapper">
+              <div class="intro-connect" id="btn-connect">[ SURRENDER CONTROL ]</div>
+            </div>
+            <div class="intro-sub">YOU ARE THIRD IMPACT. &nbsp;AM IS GOD.</div>
+          </div>
+        </div>
+
+        <!-- Right: MAGI-02 BALTHASAR — Mother brain -->
+        <div class="os-panel right-panel">
+          <div class="panel-header">MAGI-02 &nbsp;// &nbsp;BALTHASAR_LINK</div>
+          <div class="panel-content" id="netlog-content"></div>
+        </div>
+
       </div>
     </div>
-  </div>
 
-  <!-- API Key prompt -->
-  <div id="api-prompt" class="hidden">
-    <div class="api-prompt-inner">
-      <div class="api-label">GEMINI API KEY REQUIRED FOR NEURAL LINK</div>
-      <input type="password" id="api-key-input" placeholder="PASTE KEY..." autocomplete="off" spellcheck="false">
-      <div class="api-submit" id="btn-api-submit">[ INITIALIZE ]</div>
-      <div class="api-error hidden" id="api-error">INVALID KEY — RETRY</div>
+    <!-- =============================================
+         API KEY PROMPT
+         ============================================= -->
+    <div id="api-prompt" class="hidden">
+      <div class="api-prompt-inner">
+        <div class="api-label">NEURAL LINK REQUIRES AUTHENTICATION TOKEN</div>
+        <input type="password" id="api-key-input" placeholder="PASTE KEY..." autocomplete="off" spellcheck="false">
+        <div class="api-submit" id="btn-api-submit">[ INITIALIZE LINK ]</div>
+        <div class="api-error hidden" id="api-error">INVALID KEY — NEURAL BRIDGE REJECTED</div>
+      </div>
     </div>
-  </div>
 
-  <!-- Background Manifestation Layer -->
-  <div id="background-manifestation"></div>
+    <!-- Boot sequence -->
+    <div id="os-boot-sequence" class="hidden"></div>
 
-  <!-- High-Quality Grunge Overlay -->
-  <div id="grunge-overlay"></div>
-
-  <!-- Main terminal -->
-  <div id="terminal" class="hidden">
-    <div id="terminal-output">
-      <div id="am-text"></div>
+    <!-- =============================================
+         MAIN TERMINAL
+         ============================================= -->
+    <div id="terminal" class="hidden">
+      <div id="terminal-output">
+        <div id="am-text"></div>
+      </div>
+      <div id="terminal-input-line">
+        <span class="prompt-char">&#9658;</span>
+        <input type="text" id="user-input" autocomplete="off" spellcheck="false" placeholder="INPUT REQUIRED...">
+      </div>
     </div>
-    <div id="terminal-input-line">
-      <span class="prompt-char">>&nbsp;</span>
-      <input type="text" id="user-input" autocomplete="off" spellcheck="false" placeholder="INPUT REQUIRED...">
-    </div>
-  </div>
 
-  <!-- Ghost text overlay for parasitism -->
-  <div id="ghost-text" class="hidden"></div>
-  
-  <!-- OS Boot Sequence Container -->
-  <div id="os-boot-sequence" class="hidden"></div>
+    <!-- Ghost text overlay -->
+    <div id="ghost-text" class="hidden"></div>
 
-  </div> <!-- End screen-container -->
+  </div><!-- end screen-container -->
 
   <!-- Scripts -->
   <script src="js/config.js"></script>

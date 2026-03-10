@@ -76,10 +76,19 @@ const GlitchEngine = (() => {
         if (intensity >= 7) triggerDistortion('scatter', 300);
         break;
 
+      case 'tear':
+        triggerGlitch('tear', intensity);
+        triggerGlitch('chromatic', intensity, 400);
+        if (intensity >= 7) triggerDistortion('scatter', 400);
+        break;
+
       case 'dissolve':
         triggerGlitch('dissolve', intensity);
         if (intensity >= 5) triggerDistortion('frameskip', 400);
-        if (intensity >= 8) triggerDistortion('surge', 200);
+        if (intensity >= 8) {
+          triggerDistortion('surge', 300);
+          VisualEngine.triggerLogicError(300);
+        }
         break;
 
       default:

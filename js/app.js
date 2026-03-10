@@ -317,27 +317,34 @@ const App = (() => {
     // Visual state change
     VisualEngine.setColorState(response.visualState);
 
-    // Trigger mutation effects
-    GlitchEngine.triggerMutation(response.mutation, effectiveIntensity);
+    const isBlueState = response.visualState === 'blue';
 
-    // Audio effects based on intensity
-    if (effectiveIntensity >= 7) {
-      AudioEngine.playStatic(0.4);
-      AudioEngine.playImpact();
-      if (Math.random() < 0.3) VisualEngine.triggerDataGlitch(200);
-      if (effectiveIntensity >= 9) VisualEngine.triggerDreadFlash();
-    }
-    if (effectiveIntensity >= 9) {
-      AudioEngine.playTinnitus(2);
-      VisualEngine.triggerDataGlitch(1000);
+    // Blue state: suppress harsh effects — this is the human voice, not AM
+    if (!isBlueState) {
+      // Trigger mutation effects from JSON
+      if (response.mutation !== 'none') {
+        GlitchEngine.triggerMutation(response.mutation, effectiveIntensity);
+      }
+
+      // Audio effects based on AI response and intensity
+      if (response.auditoryState === 'drone' || effectiveIntensity >= 7) {
+        AudioEngine.playStatic(0.3);
+        if (Math.random() < 0.3) AudioEngine.playImpact();
+      }
+      
+      if (response.auditoryState === 'tinnitus' || effectiveIntensity >= 9) {
+        AudioEngine.playTinnitus(2.5);
+        VisualEngine.triggerDataGlitch(800);
+      }
     }
 
     // Type AM's response in sync with speech
-    const corruptionLevel = Math.min(1, effectiveIntensity * 0.08);
+    // Blue state: no corruption, slow gentle typing
+    const corruptionLevel = isBlueState ? 0 : Math.min(1, effectiveIntensity * 0.08);
     let utterance = null;
     
     try {
-      VisualEngine.setDitherJitter(true);
+      if (!isBlueState) VisualEngine.setDitherJitter(true);
       utterance = await AudioEngine.speakText(response.textOutput);
     } catch (e) {
       console.warn('App: Speech failed, falling back to silent typing', e);
@@ -346,14 +353,15 @@ const App = (() => {
     if (utterance) {
       await TextEngine.typeWithSpeech(response.textOutput, amText, utterance, corruptionLevel);
     } else {
-      const typeSpeed = effectiveIntensity >= 7 ? 30 : 50;
+      // Blue: slow, deliberate typing. AM: fast on high intensity
+      const typeSpeed = isBlueState ? 65 : (effectiveIntensity >= 7 ? 30 : 50);
       await TextEngine.typeText(response.textOutput, amText, typeSpeed, corruptionLevel);
     }
     
     VisualEngine.setDitherJitter(false);
 
-    // Post-response effects
-    if (effectiveIntensity >= 6) {
+    // Post-response effects (skip for blue)
+    if (!isBlueState && effectiveIntensity >= 6) {
       await TextEngine.delay(500);
       GlitchEngine.triggerGlitch('chromatic', effectiveIntensity, 300);
     }

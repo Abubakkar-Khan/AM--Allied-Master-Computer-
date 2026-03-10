@@ -25,58 +25,11 @@ const VisualEngine = (() => {
     return (h & 0x7fffffff) / 0x7fffffff;
   }
 
-  // Mathematical Generative Noise (Non-Organic)
-  // Replaces FBM with structured data blocks and linear static
+  // Noise disabled — EVA aesthetic uses scanlines + matrix rain only
   function generateStructuralNoise(w, h, data, timeOffset) {
-    const blockSizeX = 4 + Math.floor(Math.abs(Math.sin(timeOffset)) * 16);
-    const blockSizeY = 2 + Math.floor(Math.abs(Math.cos(timeOffset * 0.5)) * 8);
-    
-    // Base static intensity shifts - reduced visibility
-    const baseVal = Math.random() * 5;
-
-    for (let y = 0; y < h; y += blockSizeY) {
-      for (let x = 0; x < w; x += blockSizeX) {
-        // block-level calculation for brutalist digital feel
-        let isDataBlock = (hash(x, y, Math.floor(timeOffset * 10)) > 0.85);
-        let blockBrightness = isDataBlock ? (15 + Math.random() * 35) : baseVal;
-
-        // Draw block
-        for (let by = 0; by < blockSizeY && y + by < h; by++) {
-          for (let bx = 0; bx < blockSizeX && x + bx < w; bx++) {
-            const idx = ((y + by) * w + (x + bx)) * 4;
-            
-            // Introduce micro-static within blocks
-            let pixelVal = blockBrightness;
-            if (Math.random() < 0.1) pixelVal = Math.random() * 80;
-
-            let r, g, b;
-            if (currentState === 'void') {
-              // Melancholy/Instrumentality (stark white)
-              r = g = b = 255;
-              pixelVal = isDataBlock ? 255 : 0;
-            } else if (currentState === 'red') {
-              // AT-Field Breach (red)
-              r = pixelVal * 2; g = b = 0;
-            } else if (currentState === 'glitch') {
-              // Third Impact dissonance
-              r = Math.random() > 0.5 ? pixelVal * 2 : 0;
-              g = pixelVal * 0.3;
-              b = Math.random() > 0.5 ? pixelVal * 2 : 0;
-            } else if (currentState === 'gold') {
-              // SEELE gold (yellow-amber)
-              r = pixelVal * 2; g = pixelVal * 1.2; b = 0;
-            } else {
-              // Observation — NERV orange
-              r = pixelVal * 2; g = pixelVal * 0.4; b = 0;
-            }
-
-            // Alpha fading based on intensity state - much softer and lighter
-            const alpha = currentState === 'void' ? (pixelVal > 0 ? 100 : 5) : (pixelVal > 10 ? 100 : 30);
-
-            data[idx] = r; data[idx + 1] = g; data[idx + 2] = b; data[idx + 3] = alpha;
-          }
-        }
-      }
+    // Clear to fully transparent — no chunky block noise
+    for (let i = 0; i < data.length; i += 4) {
+      data[i] = 0; data[i+1] = 0; data[i+2] = 0; data[i+3] = 0;
     }
   }
 
@@ -191,22 +144,23 @@ const VisualEngine = (() => {
 
     staticCtx.font = `bold ${fontSize}px var(--font-main)`;
     
-    // Determine trail color based on state — NERV Evangelion palette
-    let rainColor = '#ff6600'; // NERV orange default
-    if (currentState === 'red') rainColor = '#ff2200';
-    else if (currentState === 'void') rainColor = '#888070';
-    else if (currentState === 'gold') rainColor = '#ffcc00';
-    else if (currentState === 'blue') rainColor = '#00ccff';
+    let rainColor = '#00ff41'; // Terminal Green for Observation
+    if (currentState === 'green') rainColor = '#00ff41';
+    else if (currentState === 'red') rainColor = '#e81900';
+    else if (currentState === 'void') rainColor = '#6a6055';
+    else if (currentState === 'gold') rainColor = '#f5c518';
+    else if (currentState === 'blue') rainColor = '#4466cc';
     else if (currentState === 'glitch') {
-        const colors = ['#ff6600', '#ffcc00', '#ff2200'];
+        const colors = ['#f0903a', '#f5c518', '#e81900', '#00ff41'];
         rainColor = colors[Math.floor(Math.random() * colors.length)];
     }
 
-    // Determine leading character color (bright/white)
-    let leadColor = '#ffeecc';
-    if (currentState === 'red') leadColor = '#ffaaaa';
-    else if (currentState === 'gold') leadColor = '#fffae6';
-    else if (currentState === 'void') leadColor = '#e8e0d0';
+    let leadColor = '#d0ffd0';
+    if (currentState === 'green') leadColor = '#d0ffd0';
+    else if (currentState === 'red') leadColor = '#ffaaaa';
+    else if (currentState === 'gold') leadColor = '#fff8d0';
+    else if (currentState === 'void') leadColor = '#d8d0c0';
+    else if (currentState === 'blue') leadColor = '#99bbff';
 
     const intensityFactor = Math.max(0.3, currentIntensity / 10);
     staticCtx.globalAlpha = intensityFactor;
@@ -275,53 +229,52 @@ const VisualEngine = (() => {
    */
   function setColorState(state) {
     const body = document.body;
-    body.classList.remove('state-red', 'state-void', 'state-gold', 'state-blue');
-    const staticCanvas = document.getElementById('noise-rain');
+    // Clear ALL previous state classes
+    body.classList.remove('state-green', 'state-red', 'state-void', 'state-glitch', 'state-gold', 'state-blue');
 
     if (state === 'red') {
       body.classList.add('state-red');
       currentState = 'red';
-      body.style.backgroundColor = '#000';
-      document.documentElement.style.setProperty('--clr-text', '#ff1a1a');
-      document.documentElement.style.setProperty('--clr-glow', 'rgba(255,10,10,0.4)');
-      document.documentElement.style.setProperty('--clr-glow-strong', 'rgba(255,10,10,0.8)');
+      body.style.backgroundColor = '#060000';
+      document.documentElement.style.setProperty('--clr-text', '#ff2b00');
+      document.documentElement.style.setProperty('--clr-glow', 'rgba(255,43,0,0.5)');
+      document.documentElement.style.setProperty('--clr-glow-strong', 'rgba(255,43,0,0.9)');
     } else if (state === 'void') {
       body.classList.add('state-void');
       currentState = 'void';
-      body.style.backgroundColor = '#000000'; 
-      document.documentElement.style.setProperty('--clr-text', '#ffffff');
-      document.documentElement.style.setProperty('--clr-glow', 'rgba(255,255,255,0.3)');
-      document.documentElement.style.setProperty('--clr-glow-strong', 'rgba(255,255,255,0.6)');
+      body.style.backgroundColor = '#04070a';
+      document.documentElement.style.setProperty('--clr-text', '#c8c4b0');
+      document.documentElement.style.setProperty('--clr-glow', 'rgba(200,196,176,0.25)');
+      document.documentElement.style.setProperty('--clr-glow-strong', 'rgba(200,196,176,0.6)');
     } else if (state === 'glitch') {
       body.classList.add('state-glitch');
       currentState = 'glitch';
-      // Chromatic Aberration / Dissonance look
-      body.style.backgroundColor = '#050005';
-      document.documentElement.style.setProperty('--clr-text', '#00ffff');
-      document.documentElement.style.setProperty('--clr-glow', 'rgba(255,0,255,0.6)');
-      document.documentElement.style.setProperty('--clr-glow-strong', 'rgba(255,0,255,0.9)');
+      body.style.backgroundColor = '#03060a';
+      document.documentElement.style.setProperty('--clr-text', '#ff7a20');
+      document.documentElement.style.setProperty('--clr-glow', 'rgba(255,122,32,0.55)');
+      document.documentElement.style.setProperty('--clr-glow-strong', 'rgba(255,122,32,0.95)');
     } else if (state === 'gold') {
       body.classList.add('state-gold');
       currentState = 'gold';
-      // Narcissism / Divine Look
-      body.style.backgroundColor = '#0a0a00';
-      document.documentElement.style.setProperty('--clr-text', '#ffd700');
-      document.documentElement.style.setProperty('--clr-glow', 'rgba(255,215,0,0.4)');
-      document.documentElement.style.setProperty('--clr-glow-strong', 'rgba(255,215,0,0.8)');
+      body.style.backgroundColor = '#07060a';
+      document.documentElement.style.setProperty('--clr-text', '#f5c518');
+      document.documentElement.style.setProperty('--clr-glow', 'rgba(245,197,24,0.45)');
+      document.documentElement.style.setProperty('--clr-glow-strong', 'rgba(245,197,24,0.9)');
     } else if (state === 'blue') {
       body.classList.add('state-blue');
       currentState = 'blue';
-      // The Messiah / Human Goodness
-      body.style.backgroundColor = '#00050a';
-      document.documentElement.style.setProperty('--clr-text', '#00ccff');
-      document.documentElement.style.setProperty('--clr-glow', 'rgba(0,204,255,0.5)');
-      document.documentElement.style.setProperty('--clr-glow-strong', 'rgba(0,204,255,0.9)');
+      body.style.backgroundColor = '#000810';
+      document.documentElement.style.setProperty('--clr-text', '#7099dd');
+      document.documentElement.style.setProperty('--clr-glow', 'rgba(80,130,220,0.3)');
+      document.documentElement.style.setProperty('--clr-glow-strong', 'rgba(80,130,220,0.7)');
     } else {
+      // green — Cold Observation (default state)
+      body.classList.add('state-green');
       currentState = 'green';
-      body.style.backgroundColor = '#0a0400';
-      document.documentElement.style.setProperty('--clr-text', '#ff6600');
-      document.documentElement.style.setProperty('--clr-glow', 'rgba(255,102,0,0.4)');
-      document.documentElement.style.setProperty('--clr-glow-strong', 'rgba(255,102,0,0.85)');
+      body.style.backgroundColor = '#020604';
+      document.documentElement.style.setProperty('--clr-text', '#00ff41');
+      document.documentElement.style.setProperty('--clr-glow', 'rgba(0,255,65,0.35)');
+      document.documentElement.style.setProperty('--clr-glow-strong', 'rgba(0,255,65,0.8)');
     }
   }
 

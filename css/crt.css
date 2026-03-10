@@ -1,113 +1,58 @@
 /* =========================================
    PROJECT AM — CRT TERMINAL SIMULATION
+   Evangelion NERV Rebuild
    ========================================= */
 
-/* --- CRT Overlay (scanlines + vignette + flicker) --- */
-#crt-overlay {
-  position: fixed;
-  top: -2px;
-  left: -2px;
-  right: -2px;
-  bottom: -2px;
-  z-index: 950;
-  pointer-events: none;
-  overflow: hidden;
-}
-
-/* Scanlines */
-#crt-overlay::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background: repeating-linear-gradient(
-    to bottom,
-    transparent 0px,
-    transparent 2px,
-    rgba(0, 0, 0, var(--scanline-opacity)) 2px,
-    rgba(0, 0, 0, var(--scanline-opacity)) 4px
-  );
-  animation: scanline-scroll 8s linear infinite;
-}
-
-/* Vignette */
-#crt-overlay::after {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background: radial-gradient(
-    ellipse at center,
-    transparent 50%,
-    rgba(0, 0, 0, 0.4) 80%,
-    rgba(0, 0, 0, 0.85) 100%
-  );
-}
-
-/* --- Screen curvature (barrel distortion) --- */
+/* --- Screen curvature --- */
 body {
-  /* Establish 3D space for the screen curve */
-  perspective: 600px;
+  perspective: 800px;
   overflow: hidden;
-  background-color: #080300; /* Very dark amber-black for EVA */
+  background-color: #020509;
 }
 
-/* The actual "glass" of the screen */
+/* The screen glass */
 #screen-container {
   position: absolute;
   top: 0; left: 0;
   width: 100%; height: 100%;
   transform-style: preserve-3d;
-  /* Simulating the curve of the CRT tube */
-  transform: perspective(1000px) rotateX(1deg) rotateY(0) scale(0.98);
-  border-radius: 40px;
+  transform: perspective(1200px) rotateX(0.5deg) scale(0.992);
+  border-radius: 2px;
   overflow: hidden;
-  box-shadow: 
-    0 0 50px rgba(0,0,0,1),
-    inset 0 0 60px rgba(0,0,0,0.8);
-  background: var(--clr-bg, #000);
+  box-shadow:
+    0 0 80px rgba(0,0,0,1),
+    inset 0 0 80px rgba(0,0,0,0.9);
+  background: var(--eva-bg, #04080c);
 }
 
-#crt-overlay {
-  border-radius: 40px; /* Match screen container */
-}
+#crt-overlay { border-radius: 2px; }
 
-/* Heavy vignette and edge darkening via box-shadow inset */
+/* Heavy edge darkening */
 #screen-container::after {
   content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
+  position: absolute; inset: 0;
   z-index: 960;
   pointer-events: none;
   box-shadow:
-    inset 0 0 160px rgba(0, 0, 0, 0.95),
-    inset 0 0 50px rgba(0, 0, 0, 0.7);
-  border-radius: 40px;
+    inset 0 0 200px rgba(0,0,0,0.95),
+    inset 0 0 80px rgba(0,0,0,0.7);
+  border-radius: 2px;
 }
 
-/* The physical bezel mask (outer edge) */
+/* Outer bezel */
 body::after {
   content: '';
-  position: fixed;
-  top: 0; left: 0; width: 100vw; height: 100vh;
+  position: fixed; inset: 0;
   z-index: 2000;
   pointer-events: none;
-  background: radial-gradient(circle, transparent 65%, rgba(10, 8, 5, 0.98) 120%);
-  box-shadow: inset 0 0 80px rgba(0,0,0,1);
+  background: radial-gradient(ellipse at center, transparent 68%, rgba(2,5,9,0.98) 120%);
+  box-shadow: inset 0 0 100px rgba(0,0,0,1);
 }
 
-/* --- Phosphor glow on text --- */
+/* Phosphor glow */
 #am-text,
 .prompt-char,
-#user-input,
-.intro-am {
+#user-input {
   text-shadow:
     0 0 2px var(--clr-text),
     0 0 5px var(--clr-glow),
@@ -115,78 +60,48 @@ body::after {
     0 0 30px var(--clr-glow);
 }
 
-/* --- Brightness flicker --- */
-body {
-  animation: crt-flicker 4s ease-in-out infinite;
-}
-
+/* Brightness flicker */
+body { animation: crt-flicker 5s ease-in-out infinite; }
 @keyframes crt-flicker {
-  0% { filter: brightness(1); }
-  3% { filter: brightness(0.92); }
-  6% { filter: brightness(1.02); }
-  9% { filter: brightness(0.97); }
-  12% { filter: brightness(1); }
-  70% { filter: brightness(1); }
-  72% { filter: brightness(0.88); }
-  74% { filter: brightness(1.05); }
-  76% { filter: brightness(0.93); }
-  78% { filter: brightness(1); }
-  100% { filter: brightness(1); }
+  0%  { filter: brightness(1); }
+  2%  { filter: brightness(0.93); }
+  4%  { filter: brightness(1.02); }
+  6%  { filter: brightness(0.98); }
+  8%  { filter: brightness(1); }
+  72% { filter: brightness(1); }
+  74% { filter: brightness(0.88); }
+  76% { filter: brightness(1.05); }
+  78% { filter: brightness(0.95); }
+  80% { filter: brightness(1); }
+  100%{ filter: brightness(1); }
 }
 
-/* --- Scanline scroll animation --- */
-@keyframes scanline-scroll {
-  0% { transform: translateY(0); }
-  100% { transform: translateY(4px); }
-}
-
-/* --- Horizontal scan bar (slow moving bright line) --- */
+/* Horizontal scan bar */
 #screen-container::before {
   content: '';
   position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 4px;
+  top: -5px; left: 0;
+  width: 100%; height: 3px;
   background: linear-gradient(
     to bottom,
     transparent,
-    rgba(255, 102, 0, 0.05),
+    rgba(240, 144, 58, 0.06),
     transparent
   );
   z-index: 955;
   pointer-events: none;
-  animation: scan-bar 8s linear infinite;
+  animation: scan-bar 10s linear infinite;
 }
+body.state-red #screen-container::before {
+  background: linear-gradient(to bottom, transparent, rgba(255,43,0,0.07), transparent);
+}
+body.state-blue #screen-container::before {
+  background: linear-gradient(to bottom, transparent, rgba(80,130,220,0.04), transparent);
+}
+body.state-gold #screen-container::before {
+  background: linear-gradient(to bottom, transparent, rgba(245,197,24,0.05), transparent);
+}
+@keyframes scan-bar { 0% { top: -5px; } 100% { top: 100%; } }
 
-body.state-red::before {
-  background: linear-gradient(
-    to bottom,
-    transparent,
-    rgba(255, 34, 0, 0.06),
-    transparent
-  );
-}
-
-body.state-void::before {
-  background: linear-gradient(
-    to bottom,
-    transparent,
-    rgba(232, 224, 208, 0.03),
-    transparent
-  );
-}
-
-body.state-gold::before {
-  background: linear-gradient(
-    to bottom,
-    transparent,
-    rgba(255, 204, 0, 0.05),
-    transparent
-  );
-}
-
-@keyframes scan-bar {
-  0% { top: -5px; }
-  100% { top: 100%; }
-}
+/* Scanline scroll */
+@keyframes scanline-scroll { 0% { transform: translateY(0); } 100% { transform: translateY(3px); } }
