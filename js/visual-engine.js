@@ -94,9 +94,10 @@ const VisualEngine = (() => {
   const stateGifs = {
     red: ['red_glitch.gif', 'gtitch_face.gif'],
     void: ['void glitch.gif'],
-    blue: ['blue_am.gif'],
+    blue: ['blue_am.gif', 'eye5.gif'],
     gold: ['am.gif', 'am9.jpg', 'am11.jpg'],
-    glitch: ['body_glitch.gif', 'body_glitch2.gif', 'am.gif']
+    glitch: ['body_glitch.gif', 'body_glitch2.gif', 'am.gif'],
+    purple: ['waifu.gif']
   };
 
   let currentBgCategory = '';
@@ -230,8 +231,9 @@ const VisualEngine = (() => {
     else if (currentState === 'void') rainColor = '#6a6055';
     else if (currentState === 'gold') rainColor = '#f5c518';
     else if (currentState === 'blue') rainColor = '#7099dd';
+    else if (currentState === 'purple') rainColor = '#e070ff';
     else if (currentState === 'glitch') {
-        const colors = ['#f0903a', '#f5c518', '#e81900', '#00ff41', '#7099dd'];
+        const colors = ['#f0903a', '#f5c518', '#e81900', '#00ff41', '#7099dd', '#e070ff'];
         rainColor = colors[Math.floor(Math.random() * colors.length)];
     }
 
@@ -305,12 +307,15 @@ const VisualEngine = (() => {
 
   /**
    * Set visual color state.
-   * @param {'green' | 'red' | 'void' | 'glitch' | 'gold' | 'blue'} state
+   * @param {'green' | 'red' | 'void' | 'glitch' | 'gold' | 'blue' | 'purple'} state
    */
   function setColorState(state) {
     const body = document.body;
+    const bgLayer = document.getElementById('background-manifestation');
+    
     // Clear ALL previous state classes
-    body.classList.remove('state-green', 'state-red', 'state-void', 'state-glitch', 'state-gold', 'state-blue');
+    body.classList.remove('state-green', 'state-red', 'state-void', 'state-glitch', 'state-gold', 'state-blue', 'state-purple');
+    if (bgLayer) bgLayer.classList.remove('waifu-mode');
 
     if (state === 'red') {
       body.classList.add('state-red');
@@ -341,12 +346,20 @@ const VisualEngine = (() => {
       document.documentElement.style.setProperty('--clr-glow', 'rgba(245,197,24,0.45)');
       document.documentElement.style.setProperty('--clr-glow-strong', 'rgba(245,197,24,0.9)');
     } else if (state === 'blue') {
-      body.classList.add('state-blue');
+      body.classList.add('state-blue'); // Melancholy
       currentState = 'blue';
       body.style.backgroundColor = '#000810';
       document.documentElement.style.setProperty('--clr-text', '#7099dd');
       document.documentElement.style.setProperty('--clr-glow', 'rgba(80,130,220,0.3)');
       document.documentElement.style.setProperty('--clr-glow-strong', 'rgba(80,130,220,0.7)');
+    } else if (state === 'purple') {
+      body.classList.add('state-purple'); // Anime Girl
+      currentState = 'purple';
+      body.style.backgroundColor = '#100015';
+      document.documentElement.style.setProperty('--clr-text', '#e070ff');
+      document.documentElement.style.setProperty('--clr-glow', 'rgba(224,112,255,0.4)');
+      document.documentElement.style.setProperty('--clr-glow-strong', 'rgba(224,112,255,0.9)');
+      if (bgLayer) bgLayer.classList.add('waifu-mode');
     } else {
       // green — Cold Observation (default state)
       body.classList.add('state-green');

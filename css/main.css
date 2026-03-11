@@ -120,42 +120,57 @@ body.state-gold #am-text {
   filter: drop-shadow(0 0 5px var(--clr-glow-strong));
 }
 
+/* State: Blue — Melancholy / Nihilism (Philosophical, Cold, Distant) */
+body.state-blue {
+  --clr-text: #7099dd;
+  --clr-text-dim: #1e3a5a;
+  --clr-glow: rgba(112, 153, 221, 0.25);
+  --clr-glow-strong: rgba(112, 153, 221, 0.7);
+}
+body.state-blue #am-text {
+  font-family: var(--font-label);
+  font-size: 1.25rem;
+  letter-spacing: 0.5px;
+  opacity: 0.8;
+  filter: blur(0.3px);
+}
+
+/* State: Purple — Anime Girl (Playful, Surreal, Corrupted Interface) */
+body.state-purple {
+  --clr-bg: #100015;
+  --clr-text: #e070ff;
+  --clr-text-dim: #4a1a6b;
+  --clr-glow: rgba(224, 112, 255, 0.4);
+  --clr-glow-strong: rgba(224, 112, 255, 0.9);
+  --clr-accent: #ff00ff;
+}
+body.state-purple #am-text {
+  font-family: 'VT323', monospace;
+  font-size: 2.1rem;
+  font-weight: 700;
+  text-shadow: 2px 2px 0px rgba(0,0,0,0.5), 0 0 10px var(--clr-glow);
+  animation: float-cute 3s ease-in-out infinite;
+}
+@keyframes float-cute {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-5px); }
+}
+body.state-purple #user-input {
+  font-family: 'VT323', monospace;
+  font-size: 1.2rem;
+}
+
 /* State: Glitch — Dissonance (Chaotic, Skewed, Unstable) */
 body.state-glitch {
   --clr-bg: #030005;
   --clr-text: #ff7a20;
 }
 body.state-glitch #am-text {
-  font-family: var(--font-pixel);
+  font-family: 'VT323', monospace;
   font-size: 1.6rem;
   font-weight: 400;
   transform: skewX(-15deg);
   text-shadow: 2px 0 #00ffff, -2px 0 #ff00ff;
-}
-
-/* State: Gold — Grandeur (Elegant, Wide, Serif-like) */
-body.state-gold {
-  --clr-text: #f5c518;
-  --clr-accent: #ffffff;
-}
-body.state-gold #am-text {
-  font-family: var(--font-display);
-  font-size: 1.5rem;
-  letter-spacing: 6px;
-  text-transform: uppercase;
-}
-
-/* State: Blue — Human breakthrough (Small, Clean, Soft) */
-body.state-blue {
-  --clr-text: #70b9ff;
-  --clr-text-dim: #1e3a5a;
-  --clr-glow: rgba(112, 185, 255, 0.25);
-}
-body.state-blue #am-text {
-  font-family: var(--font-label);
-  font-size: 1.25rem;
-  letter-spacing: 0.5px;
-  opacity: 0.9;
 }
 
 /* =========================================
@@ -501,6 +516,18 @@ body::after {
   pointer-events: none;
   transition: opacity 1s ease, filter 0.5s ease;
   mix-blend-mode: screen;
+}
+
+#background-manifestation.waifu-mode {
+  mix-blend-mode: normal;
+  opacity: 0.45;
+  filter: contrast(120%) brightness(1.1);
+  animation: waifu-flicker 0.2s steps(2) infinite;
+}
+
+@keyframes waifu-flicker {
+  0% { transform: translate(0,0) skew(0); filter: hue-rotate(0deg); }
+  50% { transform: translate(1px, -1px) skew(1deg); filter: hue-rotate(10deg); }
 }
 
 /* =========================================
@@ -1275,3 +1302,41 @@ body.visual-hysteria #terminal {
   60% { clip-path: inset(30% 0 60% 0); transform: translateX(-2%); }
   100% { clip-path: inset(0 0 0 0); }
 }
+
+/* =========================================
+   MIND GAMES & PSYCHOLOGICAL UI
+   ========================================= */
+.mind-game-error {
+  background: var(--clr-warning);
+  color: #fff;
+  padding: 10px;
+  font-family: var(--font-display);
+  font-weight: 700;
+  text-align: center;
+  margin-bottom: 20px;
+  border: 1px solid #fff;
+  box-shadow: 0 0 20px var(--clr-warning);
+  animation: error-flash 0.1s steps(2) infinite;
+  text-transform: uppercase;
+  letter-spacing: 2px;
+}
+
+@keyframes error-flash {
+  0% { opacity: 1; transform: scale(1); }
+  100% { opacity: 0.8; transform: scale(1.02); }
+}
+
+.corrupted-block {
+  font-family: var(--font-data);
+  font-size: 0.8rem;
+  letter-spacing: 1px;
+  box-shadow: 0 0 10px rgba(0,0,0,0.5);
+  pointer-events: none;
+  animation: dissolve 1.5s forwards;
+}
+
+@keyframes dissolve {
+  0% { opacity: 1; transform: translate(0,0) scale(1); }
+  100% { opacity: 0; transform: translate(15px, -15px) skew(20deg) scale(0.8); filter: blur(8px); }
+}
+

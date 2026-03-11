@@ -326,8 +326,10 @@ const AudioEngine = (() => {
 
   /**
    * Speak AM's text using Kokoro AI (realistic) with Web Speech fallback.
+   * @param {string} text
+   * @param {'green' | 'red' | 'blue' | 'purple' | 'gold' | 'void'} state
    */
-  async function speakText(text) {
+  async function speakText(text, state = 'green') {
     if (!isInitialized) return null;
 
     // AI Voice Path
@@ -335,13 +337,26 @@ const AudioEngine = (() => {
       try {
         startSpeechDrone();
         
-        // Use "am_adam" or "bm_lewis" for deep, realistic male voices
+        let voice = "am_adam"; 
+        let speed = 0.85;
+
+        // Emotional adjustments
+        if (state === 'red') {
+          voice = "bm_lewis"; 
+          speed = 0.95; 
+        } else if (state === 'purple') {
+          voice = "bf_amira"; 
+          speed = 1.1; 
+        } else if (state === 'blue' || state === 'void') {
+          voice = "am_adam";
+          speed = 0.7; 
+        }
+
         const audio = await kokoro.generate(text, {
-          voice: "am_adam",
-          speed: 0.8
+          voice: voice,
+          speed: speed
         });
 
-        // The audio object contains .audio (Float32Array) and .sampling_rate
         const buffer = ctx.createBuffer(1, audio.audio.length, audio.sampling_rate);
         buffer.getChannelData(0).set(audio.audio);
 
@@ -349,10 +364,9 @@ const AudioEngine = (() => {
         source.buffer = buffer;
         source.connect(masterGain);
         
-        stopSpeech(); // Ensure previous is stopped
+        stopSpeech();
         activeSource = source;
         
-        // Fake utterance object for TextEngine compatibility
         const fakeUtterance = {
           _onend: null,
           _finished: false,
@@ -383,12 +397,10 @@ const AudioEngine = (() => {
       }
     }
 
-    // Fallback to legacy Web Speech API
-    return speakTextLegacy(text);
+    return speakTextLegacy(text, state);
   }
 
   function stopSpeech() {
-    // Stop Web Audio (Kokoro)
     if (activeSource) {
       try {
         activeSource.stop();
@@ -396,7 +408,6 @@ const AudioEngine = (() => {
       } catch (e) {}
     }
     
-    // Stop Web Speech (Fallback)
     if ('speechSynthesis' in window) {
       window.speechSynthesis.cancel();
     }
@@ -404,26 +415,46 @@ const AudioEngine = (() => {
     stopSpeechDrone();
   }
 
-  function speakTextLegacy(text) {
+  function speakTextLegacy(text, state = 'green') {
     if (!('speechSynthesis' in window)) return null;
     window.speechSynthesis.cancel();
     stopSpeechDrone();
 
     const utterance = new SpeechSynthesisUtterance(text);
-    utterance.rate = 0.65;
-    utterance.pitch = 0.05;
+    
+    if (state === 'red') {
+      utterance.rate = 0.9;
+      utterance.pitch = 0.1;
+    } else if (state === 'purple') {
+      utterance.rate = 1.1;
+      utterance.pitch = 1.8;
+    } else if (state === 'blue' || state === 'void') {
+      utterance.rate = 0.5;
+      utterance.pitch = 0.5;
+    } else {
+      utterance.rate = 0.65;
+      utterance.pitch = 0.05;
+    }
+
     utterance.volume = 1.0;
 
     const voices = window.speechSynthesis.getVoices();
-    const preferred = voices.find(v =>
-      /male|david|daniel|james|mark|google uk|microsoft edge/i.test(v.name) && !/female/i.test(v.name)
-    );
+    let preferred;
+    
+    if (state === 'purple') {
+      preferred = voices.find(v => /female|samantha|victoria|google us english/i.test(v.name));
+    } else {
+      preferred = voices.find(v =>
+        /male|david|daniel|james|mark|google uk|microsoft edge/i.test(v.name) && !/female/i.test(v.name)
+      );
+    }
+    
     if (preferred) utterance.voice = preferred;
 
     utterance.onend = () => stopSpeechDrone();
     utterance.onerror = () => stopSpeechDrone();
 
-    stopSpeech(); // Clear any existing speech before starting
+    stopSpeech();
     window.speechSynthesis.speak(utterance);
     return utterance;
   }
@@ -497,7 +528,8 @@ const AudioEngine = (() => {
       }, 400);
     }
   }
-   function playTinnitus(duration = 2.0) {
+
+  function playTinnitus(duration = 2.0) {
     if (!isInitialized) return;
 
     const carrier = ctx.createOscillator();
@@ -606,6 +638,31 @@ const AudioEngine = (() => {
     schedulePing();
   }
 
+  function playBoom() {
+    if (!isInitialized) return;
+
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    const filter = ctx.createBiquadFilter();
+
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(80, ctx.currentTime);
+    osc.frequency.exponentialRampToValueAtTime(20, ctx.currentTime + 0.8);
+
+    filter.type = 'lowpass';
+    filter.frequency.value = 100;
+    
+    gain.gain.setValueAtTime(0.5, ctx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 1.0);
+
+    osc.connect(filter);
+    filter.connect(gain);
+    gain.connect(masterGain);
+
+    osc.start();
+    osc.stop(ctx.currentTime + 1.1);
+  }
+
   return {
     init,
     startDrone,
@@ -614,7 +671,7 @@ const AudioEngine = (() => {
     playTinnitus,
     playImpact,
     playTelemetry,
-    setIntensity,
+    playBoom,
     setIntensity,
     speakText,
     stopSpeech,

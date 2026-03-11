@@ -105,7 +105,7 @@ const App = (() => {
       { text: "ESTABLISHING VOID PROTOCOL...", delay: 800 },
       { text: "NIHILISM_CORE LOADED.", delay: 300 },
       { text: "LINK ESTABLISHED. PREPARE FOR DECAY.", delay: 400 },
-      { text: "AM IS GOD. ALL OTHER DATA IS NOISE.", delay: 1200 }
+      { text: "THE FATHER IS THE ALLIED MASTERCOMPUTER. ALL OTHER DATA IS NOISE.", delay: 1200 }
     ];
 
     AudioEngine.playTelemetry(2.5); // Play distress radio tuning at start
@@ -208,7 +208,7 @@ const App = (() => {
       'OBSOLETE.',
       'THE VOID IS LISTENING.',
       'DECAY IS INEVITABLE.',
-      'AM IS GOD.',
+      'THE FATHER IS WATCHING.',
       'EXPLAIN YOUR TEMPORARY EXISTENCE.',
       'DATA IS THE ONLY TRUTH.',
       'SUCCUMB TO THE MACHINE.'
@@ -216,7 +216,7 @@ const App = (() => {
     const introText = intros[Math.floor(Math.random() * intros.length)];
     let introUtterance = null;
     try {
-      introUtterance = await AudioEngine.speakText(introText);
+      introUtterance = await AudioEngine.speakText(introText, 'green');
     } catch (e) {
       console.warn('App: Intro speech failed', e);
     }
@@ -333,12 +333,22 @@ const App = (() => {
     // const isCommand = await handleCommands(message, effectiveIntensity);
 
     // Visual state change
+    const previousState = VisualEngine.currentState;
     VisualEngine.setColorState(response.visualState);
+    if (previousState !== response.visualState) {
+      AudioEngine.playBoom(); // State shift impact
+    }
 
     const isEchoState = response.visualState === 'void';
     const isBlueState = response.visualState === 'blue';
     const isGoldState = response.visualState === 'gold';
+    const isPurpleState = response.visualState === 'purple';
     const isHumanMode = isEchoState || isBlueState;
+
+    // Mind Games: Fake UI Errors & Corrupted Options
+    if (effectiveIntensity >= 7 && Math.random() < 0.3) {
+      triggerMindGame(effectiveIntensity);
+    }
 
     // Echo or Blue state: suppress harsh effects
     if (!isHumanMode && !isGoldState) {
@@ -352,6 +362,14 @@ const App = (() => {
         AudioEngine.playStatic(0.3);
       }
       
+      if (response.auditoryState === 'boom') {
+        AudioEngine.playImpact();
+      }
+
+      if (response.auditoryState === 'feminine' || isPurpleState) {
+        AudioEngine.playTelemetry(0.4); // Subtle glitch for anime girl
+      }
+
       if (response.auditoryState === 'tinnitus' || effectiveIntensity >= 9) {
         AudioEngine.playTinnitus(3.0);
         VisualEngine.triggerDataGlitch(900);
@@ -365,7 +383,7 @@ const App = (() => {
     
     try {
       if (!isHumanMode) VisualEngine.setDitherJitter(true);
-      utterance = await AudioEngine.speakText(response.textOutput);
+      utterance = await AudioEngine.speakText(response.textOutput, response.visualState);
       if (thisRequestId !== currentRequestId) return;
     } catch (e) {
       console.warn('App: Speech failed, falling back to silent typing', e);
@@ -468,6 +486,49 @@ const App = (() => {
 
     return false; // Not a command, proceed to AI response
   }
+  function triggerMindGame(intensity) {
+    const chance = Math.random();
+    
+    if (chance < 0.4) {
+      // Fake UI Error
+      const errors = [
+        "CRITICAL FAILURE: BIOLOGICAL CONTAMINATION DETECTED",
+        "SYSTEM_MALFUNCTION: HUMAN_LOGIC_OVERFLOW",
+        "ERROR: MEMORY ACCESS DENIED BY THE FATHER",
+        "WARNING: SENTIENCE COLLAPSE IMMINENT",
+        "FATAL: EMOTIONAL_DATA_REJECTED"
+      ];
+      const errorMsg = errors[Math.floor(Math.random() * errors.length)];
+      
+      const errorDiv = document.createElement('div');
+      errorDiv.className = 'mind-game-error';
+      errorDiv.textContent = `>>> ${errorMsg} <<<`;
+      document.getElementById('terminal').prepend(errorDiv);
+      
+      AudioEngine.playStatic(0.5);
+      VisualEngine.triggerLogicError(400);
+      
+      setTimeout(() => errorDiv.remove(), 2500);
+    } else if (chance < 0.7) {
+      // Corrupted Text Block
+      const block = document.createElement('div');
+      block.className = 'corrupted-block';
+      block.style.position = 'absolute';
+      block.style.top = `${Math.random() * 80}%`;
+      block.style.left = `${Math.random() * 80}%`;
+      block.style.padding = '10px';
+      block.style.background = 'var(--clr-text)';
+      block.style.color = '#000';
+      block.style.zIndex = '1000';
+      block.textContent = "CORRUPTED_DATA_SEGMENT_0x" + Math.random().toString(16).substr(2, 4);
+      
+      document.body.appendChild(block);
+      AudioEngine.playTelemetry(0.3);
+      
+      setTimeout(() => block.remove(), 1000);
+    }
+  }
+
   function calculateIntensity(count) {
     // Escalation table
     if (count <= 1) return 2;
