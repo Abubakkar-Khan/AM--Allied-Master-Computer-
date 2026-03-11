@@ -324,10 +324,10 @@ const AudioEngine = (() => {
     }
   }
 
-  /**
+   /**
    * Speak AM's text using Kokoro AI (realistic) with Web Speech fallback.
    */
-  async function speakText(text) {
+  async function speakText(text, state = 'green') {
     if (!isInitialized) return null;
 
     // AI Voice Path
@@ -335,10 +335,21 @@ const AudioEngine = (() => {
       try {
         startSpeechDrone();
         
-        // Use "am_adam" or "bm_lewis" for deep, realistic male voices
+        // Voice mapping for AM's states
+        const voiceMap = {
+          'green': 'bm_lewis',    // Oracle - Analytical
+          'red': 'am_adam',      // Tyrant - Aggressive
+          'void': 'af_sky',      // Echo - Melancholy
+          'blue': 'af_heart',    // Compassionate - Gentle
+          'gold': 'am_michael',  // God-Complex - Grand
+          'glitch': 'am_adam'    // Default/Unstable
+        };
+
+        const voice = voiceMap[state] || 'bm_lewis';
+        
         const audio = await kokoro.generate(text, {
-          voice: "am_adam",
-          speed: 0.8
+          voice: voice,
+          speed: state === 'void' ? 0.6 : 0.8
         });
 
         // The audio object contains .audio (Float32Array) and .sampling_rate
@@ -497,7 +508,8 @@ const AudioEngine = (() => {
       }, 400);
     }
   }
-   function playTinnitus(duration = 2.0) {
+
+  function playTinnitus(duration = 2.0) {
     if (!isInitialized) return;
 
     const carrier = ctx.createOscillator();
@@ -535,11 +547,12 @@ const AudioEngine = (() => {
 
   /**
    * Unsettling background audio layer — Techn-Neo-Retro Dread
+   * Refined to a constant Machine Hum.
    */
   function startBackgroundHorror() {
     if (!isInitialized) return;
 
-    // Dissonant FM Drone (Cold Metal)
+    // 1. Dissonant FM Drone (Cold Metal)
     const carrier = ctx.createOscillator();
     const modulator = ctx.createOscillator();
     const modGain = ctx.createGain();
@@ -548,15 +561,15 @@ const AudioEngine = (() => {
 
     carrier.type = 'sawtooth';
     carrier.frequency.value = 55; // A1
-    modulator.frequency.value = 77.78; // Eb2 (Tritone)
+    modulator.frequency.value = 77.78; // Eb2
     modGain.gain.value = 30;
 
     modulator.connect(modGain);
     modGain.connect(carrier.frequency);
 
     disFilter.type = 'lowpass';
-    disFilter.frequency.value = 100;
-    disFilter.Q.value = 5;
+    disFilter.frequency.value = 80;
+    disFilter.Q.value = 2;
 
     disGain.gain.value = 0;
 
@@ -566,44 +579,43 @@ const AudioEngine = (() => {
     
     modulator.start();
     carrier.start();
-    disGain.gain.linearRampToValueAtTime(0.08, ctx.currentTime + 10);
+    disGain.gain.linearRampToValueAtTime(0.05, ctx.currentTime + 10);
 
-    // FM Metallic Resonance Pings (Random)
-    function schedulePing() {
-      const delay = 6000 + Math.random() * 14000;
-      setTimeout(() => {
-        if (!isInitialized) return;
-        const pCarrier = ctx.createOscillator();
-        const pModulator = ctx.createOscillator();
-        const pModGain = ctx.createGain();
-        const pGain = ctx.createGain();
-        const pCrusher = createBitcrusher(2); // Lo-fi metallic ring
-
-        pCarrier.type = 'sine';
-        pCarrier.frequency.value = 1500 + Math.random() * 2000;
-        pModulator.frequency.value = pCarrier.frequency.value * 1.5;
-        pModGain.gain.value = 500;
-
-        pModulator.connect(pModGain);
-        pModGain.connect(pCarrier.frequency);
-
-        pGain.gain.value = 0.03 + Math.random() * 0.04;
-
-        pCarrier.connect(pCrusher);
-        pCrusher.connect(pGain);
-        pGain.connect(masterGain);
-        
-        pModulator.start();
-        pCarrier.start();
-
-        pGain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 2.5);
-        pCarrier.stop(ctx.currentTime + 3);
-        pModulator.stop(ctx.currentTime + 3);
-
-        schedulePing();
-      }, delay);
+    // 2. Constant Radio Static Hum (White Noise Bandpassed)
+    const node = ctx.createBufferSource();
+    const buffer = ctx.createBuffer(1, ctx.sampleRate * 2, ctx.sampleRate);
+    const data = buffer.getChannelData(0);
+    for (let i = 0; i < buffer.length; i++) {
+      data[i] = Math.random() * 2 - 1;
     }
-    schedulePing();
+    node.buffer = buffer;
+    node.loop = true;
+
+    const noiseFilter = ctx.createBiquadFilter();
+    noiseFilter.type = 'bandpass';
+    noiseFilter.frequency.value = 1000;
+    noiseFilter.Q.value = 0.5;
+
+    const noiseGain = ctx.createGain();
+    noiseGain.gain.value = 0;
+
+    node.connect(noiseFilter);
+    noiseFilter.connect(noiseGain);
+    noiseGain.connect(masterGain);
+
+    node.start();
+    noiseGain.gain.linearRampToValueAtTime(0.02, ctx.currentTime + 5);
+
+    // 3. Low Machine Hum (Sine + Triangle)
+    const machineHum = ctx.createOscillator();
+    machineHum.type = 'triangle';
+    machineHum.frequency.value = 50; // Mains hum frequency
+    const humGain = ctx.createGain();
+    humGain.gain.value = 0;
+    machineHum.connect(humGain);
+    humGain.connect(masterGain);
+    machineHum.start();
+    humGain.gain.linearRampToValueAtTime(0.03, ctx.currentTime + 3);
   }
 
   return {
@@ -614,7 +626,6 @@ const AudioEngine = (() => {
     playTinnitus,
     playImpact,
     playTelemetry,
-    setIntensity,
     setIntensity,
     speakText,
     stopSpeech,

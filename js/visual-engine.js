@@ -84,10 +84,10 @@ const VisualEngine = (() => {
 
   // Horror Image Categories (Expanded to use all images)
   const bgImages = {
-    low: ['AM1.jpg', 'am10.jpg', 'am4.jpg', 'face.jpg', 'am2.jpg', 'face2.jpg'],
+    low: ['AM1.jpg', 'am4.jpg', 'face.jpg', 'am3.jpg', 'am6.jpg'],
     medium: ['eye1.jpg', 'eye2.jpg', 'eye3.jpg', 'eye4.jpg', 'am6.jpg', 'am8.jpg', 'am11.jpg'],
-    high: ['am7.jpg', 'am9.jpg', 'teeth1.jpg', 'hand.jpg', 'am5.jpg', 'am3.jpg'],
-    horror: ['am3.jpg', 'am7.jpg', 'teeth1.jpg', 'hand.jpg', 'face.jpg', 'face2.jpg']
+    high: ['am7.jpg', 'am9.jpg', 'hand.jpg', 'am3.jpg', 'am11.jpg'],
+    horror: ['am3.jpg', 'am7.jpg', 'hand.jpg', 'face.jpg', 'am9.jpg']
   };
 
   // State-specific GIF backgrounds

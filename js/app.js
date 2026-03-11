@@ -365,7 +365,7 @@ const App = (() => {
     
     try {
       if (!isHumanMode) VisualEngine.setDitherJitter(true);
-      utterance = await AudioEngine.speakText(response.textOutput);
+      utterance = await AudioEngine.speakText(response.textOutput, response.visualState);
       if (thisRequestId !== currentRequestId) return;
     } catch (e) {
       console.warn('App: Speech failed, falling back to silent typing', e);
