@@ -1340,3 +1340,37 @@ body.visual-hysteria #terminal {
   100% { opacity: 0; transform: translate(15px, -15px) skew(20deg) scale(0.8); filter: blur(8px); }
 }
 
+/* --- Main Menu (Intro) Glitchiness --- */
+.menu-glitch-active {
+  animation: intro-shake 0.15s cubic-bezier(.36,.07,.19,.97) both;
+}
+
+@keyframes intro-shake {
+  0% { transform: translate(0, 0) scale(1) skew(0); filter: hue-rotate(0deg); }
+  25% { transform: translate(-4px, 2px) scale(1.02) skew(2deg); filter: hue-rotate(90deg) contrast(150%); }
+  50% { transform: translate(4px, -2px) scale(0.98) skew(-2deg); filter: hue-rotate(-90deg) invert(0.2); }
+  75% { transform: translate(-2px, -4px) scale(1.01); filter: contrast(200%); }
+  100% { transform: translate(0, 0) scale(1) skew(0); filter: hue-rotate(0deg); }
+}
+
+.intro-panel-glitch {
+  animation: panel-jitter 0.2s infinite;
+}
+
+@keyframes panel-jitter {
+  0% { transform: translateX(0); }
+  20% { transform: translateX(-2px) skewX(1deg); }
+  40% { transform: translateX(2px) skewX(-1deg); }
+  60% { transform: translateX(-1px); }
+  80% { transform: translateX(1px); }
+  100% { transform: translateX(0); }
+}
+
+/* Anime Girl Background Mode */
+#background-manifestation.waifu-mode {
+  filter: grayscale(0.2) saturate(1.8) contrast(1.2) brightness(1.1) !important;
+  opacity: 0.5 !important;
+  mix-blend-mode: hard-light;
+  transition: all 0.5s ease;
+}
+

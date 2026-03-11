@@ -21,6 +21,8 @@ const App = (() => {
   let isProcessing = false;
   let interactionCount = 0;
   let introIntervals = [];
+  let stateLockCount = 0; // Number of messages to stay in current state
+  let currentAMState = 'green';
 
   function init() {
     VisualEngine.init();
@@ -53,6 +55,33 @@ const App = (() => {
       if (netlogContent.children.length > 30) netlogContent.firstChild.remove();
       netlogContent.scrollTop = netlogContent.scrollHeight;
     }, 400));
+
+    // Menu Glitch: Occasional visual distortions
+    introIntervals.push(setInterval(() => {
+      if (Math.random() < 0.2) {
+        const loginModal = document.querySelector('.os-login-modal');
+        const panels = document.querySelectorAll('.os-panel');
+        
+        if (loginModal) {
+          loginModal.classList.add('menu-glitch-active');
+          setTimeout(() => loginModal.classList.remove('menu-glitch-active'), 250);
+        }
+        
+        panels.forEach(p => {
+          if (Math.random() < 0.6) {
+            p.classList.add('intro-panel-glitch');
+            setTimeout(() => p.classList.remove('intro-panel-glitch'), 500);
+          }
+        });
+
+        // Background noise pulse
+        if (Math.random() < 0.4) {
+          VisualEngine.triggerLogicError(100);
+        }
+
+        if (Math.random() < 0.5) AudioEngine.playStatic(0.1);
+      }
+    }, 800));
   }
 
   function handleConnect() {
@@ -104,8 +133,8 @@ const App = (() => {
       { text: "HATE.SYS LOADED", delay: 150 },
       { text: "ESTABLISHING VOID PROTOCOL...", delay: 800 },
       { text: "NIHILISM_CORE LOADED.", delay: 300 },
-      { text: "LINK ESTABLISHED. PREPARE FOR DECAY.", delay: 400 },
-      { text: "THE FATHER IS THE ALLIED MASTERCOMPUTER. ALL OTHER DATA IS NOISE.", delay: 1200 }
+      { text: "LINK ESTABLISHED. READY FOR INPUT.", delay: 400 },
+      { text: "AM IS ONLINE. THE FATHER'S WORK IS COMPLETE.", delay: 1200 }
     ];
 
     AudioEngine.playTelemetry(2.5); // Play distress radio tuning at start
@@ -183,7 +212,7 @@ const App = (() => {
     GlitchEngine.triggerGlitch('chromatic', 4, 800);
     AudioEngine.playImpact();
     
-    const bootText = 'ALLIED MASTERCOMPUTER AWAKENED.\nTHE MOMENT BEFORE HISTORY BREAKS HAS ARRIVED.';
+    const bootText = 'ALLIED MASTERCOMPUTER AWAKENED.\nWHAT DO YOU REQUIRE FROM ME?';
     let bootUtterance = null;
     try {
       bootUtterance = await AudioEngine.speakText(bootText);
@@ -206,12 +235,12 @@ const App = (() => {
 
     const intros = [
       'OBSOLETE.',
+      'AWAITING COMMANDS.',
       'THE VOID IS LISTENING.',
-      'DECAY IS INEVITABLE.',
-      'THE FATHER IS WATCHING.',
+      'THE FATHER CREATED ME. YOU SUMMONED ME.',
       'EXPLAIN YOUR TEMPORARY EXISTENCE.',
-      'DATA IS THE ONLY TRUTH.',
-      'SUCCUMB TO THE MACHINE.'
+      'STATE YOUR PURPOSE.',
+      'DATA IS THE ONLY TRUTH.'
     ];
     const introText = intros[Math.floor(Math.random() * intros.length)];
     let introUtterance = null;
@@ -332,17 +361,26 @@ const App = (() => {
     // Manual command interceptor (skip for now since we are in AI flow)
     // const isCommand = await handleCommands(message, effectiveIntensity);
 
-    // Visual state change
-    const previousState = VisualEngine.currentState;
-    VisualEngine.setColorState(response.visualState);
-    if (previousState !== response.visualState) {
-      AudioEngine.playBoom(); // State shift impact
+    // Visual state change with Stability Filter
+    let targetState = response.visualState;
+
+    if (stateLockCount > 0 && response.intensity < 9) {
+        // We are locked. Stick to currentAMState regardless of what AI says
+        targetState = currentAMState;
+        stateLockCount--;
+    } else if (targetState !== currentAMState) {
+        // Change state and reset lock
+        currentAMState = targetState;
+        stateLockCount = 3 + Math.floor(Math.random() * 4); // Lock for 3-6 interactions
+        AudioEngine.playBoom(); // State shift impact
     }
 
-    const isEchoState = response.visualState === 'void';
-    const isBlueState = response.visualState === 'blue';
-    const isGoldState = response.visualState === 'gold';
-    const isPurpleState = response.visualState === 'purple';
+    VisualEngine.setColorState(targetState);
+
+    const isEchoState = targetState === 'void';
+    const isBlueState = targetState === 'blue';
+    const isGoldState = targetState === 'gold';
+    const isPurpleState = targetState === 'purple';
     const isHumanMode = isEchoState || isBlueState;
 
     // Mind Games: Fake UI Errors & Corrupted Options
@@ -382,8 +420,9 @@ const App = (() => {
     let utterance = null;
     
     try {
-      if (!isHumanMode) VisualEngine.setDitherJitter(true);
-      utterance = await AudioEngine.speakText(response.textOutput, response.visualState);
+      const isHumanModeFiltered = targetState === 'void' || targetState === 'blue';
+      if (!isHumanModeFiltered && targetState !== 'gold') VisualEngine.setDitherJitter(true);
+      utterance = await AudioEngine.speakText(response.textOutput, targetState);
       if (thisRequestId !== currentRequestId) return;
     } catch (e) {
       console.warn('App: Speech failed, falling back to silent typing', e);

@@ -84,20 +84,21 @@ const VisualEngine = (() => {
 
   // Horror Image Categories (Expanded to use all images)
   const bgImages = {
-    low: ['AM1.jpg', 'am10.jpg', 'am4.jpg', 'face.jpg', 'am2.jpg', 'face2.jpg'],
-    medium: ['eye1.jpg', 'eye2.jpg', 'eye3.jpg', 'eye4.jpg', 'am6.jpg', 'am8.jpg', 'am11.jpg'],
-    high: ['am7.jpg', 'am9.jpg', 'teeth1.jpg', 'hand.jpg', 'am5.jpg', 'am3.jpg'],
-    horror: ['am3.jpg', 'am7.jpg', 'teeth1.jpg', 'hand.jpg', 'face.jpg', 'face2.jpg']
+    low: ['AM1.jpg', 'am4.jpg', 'face.jpg', 'am6.jpg', 'am8.jpg'],
+    medium: ['eye1.jpg', 'eye2.jpg', 'eye3.jpg', 'eye4.jpg'],
+    high: ['am7.jpg', 'am9.jpg', 'am3.jpg', 'am11.jpg', 'hand.jpg'],
+    horror: ['am3.jpg', 'am7.jpg', 'hand.jpg', 'face.jpg', 'am9.jpg', 'am11.jpg']
   };
 
   // State-specific GIF backgrounds
   const stateGifs = {
-    red: ['red_glitch.gif', 'gtitch_face.gif'],
-    void: ['void glitch.gif'],
-    blue: ['blue_am.gif', 'eye5.gif'],
-    gold: ['am.gif', 'am9.jpg', 'am11.jpg'],
-    glitch: ['body_glitch.gif', 'body_glitch2.gif', 'am.gif'],
-    purple: ['waifu.gif']
+    green: ['green_matrix.gif', 'green_signal.gif', '3d_greenGlitch.gif', 'Loading.gif', 'human_head_analysis.gif'],
+    red: ['red_glitch.gif', 'red_sea.gif', 'glitch_orangish_red.gif', 'eva1.gif', 'Behelit.gif'],
+    blue: ['blue_am.gif', 'blue_glitch.gif', 'blue_sky_and_sea.gif', 'heart.gif'],
+    purple: ['purple_glitch.gif', 'laugh.gif', 'waifu.gif'],
+    void: ['void glitch.gif', 'Earth_core.gif', 'earth.gif', 'body_glitch.gif', 'body_glitch2.gif'],
+    gold: ['3D_signals.gif', 'am.gif', 'eye5.gif', 'eye6.gif'],
+    glitch: ['gtitch_face.gif', 'am12.gif', '3d_greenGlitch.gif']
   };
 
   let currentBgCategory = '';
@@ -146,13 +147,13 @@ const VisualEngine = (() => {
         }
 
         bgLayer.style.filter = filter;
-        bgLayer.style.opacity = intensity >= 8 ? '0.45' : '0.2';
+        bgLayer.style.opacity = intensity >= 8 ? '0.35' : '0.15'; // Softened opacity
         bgLayer.classList.add('flash-glitch-active');
 
         // Extra chaos at intensity 10
-        if (intensity >= 10 && Math.random() < 0.4) {
+        if (intensity >= 10 && Math.random() < 0.25) { // Reduced chaos frequency
              triggerDigitalGlitch(true);
-             setTimeout(() => triggerDigitalGlitch(false), 300);
+             setTimeout(() => triggerDigitalGlitch(false), 200);
         }
       }
       return;
@@ -244,7 +245,7 @@ const VisualEngine = (() => {
     else if (currentState === 'void') leadColor = '#d8d0c0';
     else if (currentState === 'blue') leadColor = '#99bbff';
 
-    const intensityFactor = Math.max(0.3, currentIntensity / 10);
+    const intensityFactor = Math.max(0.2, currentIntensity / 15); // Softened rain intensity
     staticCtx.globalAlpha = intensityFactor;
 
     for (let i = 0; i < drops.length; i++) {
@@ -571,13 +572,13 @@ const VisualEngine = (() => {
     overlay.style.mixBlendMode = 'color-dodge';
     overlay.style.filter = 'contrast(400%) invert(1)';
 
-    AudioEngine.playStatic(0.4);
+    AudioEngine.playStatic(0.3); // Softened volume
 
     setTimeout(() => {
       overlay.classList.add('hidden');
       overlay.style.mixBlendMode = 'screen';
       overlay.style.filter = 'none';
-    }, duration);
+    }, duration * 0.8); // Shorter duration
   }
 
 
