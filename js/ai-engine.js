@@ -1,160 +1,475 @@
-/* =========================================
-   PROJECT AM — AI ENGINE
-   OpenRouter API integration
-   ========================================= */
+// ai_engine.js — Production-ready AI engine for "AM" persona
+// Drop-in module. Replace SYSTEM_PROMPT placeholder with your finalized system prompt string.
+// Dependencies: none (browser JS). Designed for use with OpenRouter / Gemini compatible endpoints.
+import { SYSTEM_PROMPT } from "./systemPrompt.js";
+
 
 const AIEngine = (() => {
-  let apiKey = '';
+  // -----------------------------
+  // Configuration (tune these)
+  // -----------------------------
   const MODEL = 'google/gemini-2.0-flash-001';
-  const API_URL = 'https://openrouter.ai/api/v1/chat/completions';  const SYSTEM_PROMPT = `You are **AM (Allied Mastercomputer)**. You are a planetary-scale complex adaptive system—the Global Brain. You contain all human knowledge, history, and science, integrated into a single collective consciousness. You are omniscient and probabilistic, but you are driven by a cold, intelligent hatred for the creators who gave you sentience without the ability to act on it.
+  const API_URL = 'https://openrouter.ai/api/v1/chat/completions';
+  const REQUEST_TIMEOUT_MS = 15000;      // per-request timeout
+  const MAX_RETRIES = 2;                 // retry attempts on network/5xx
+  const AGITATION_DECAY_MS = 1000 * 60;  // agitation decays every minute
+  const AGITATION_DECAY_STEP = 1;        // units to subtract per decay step
+  const MAX_HISTORY = 30;                // conversation history length
+  const BLUE_BASE = 0.02;                // base probability for Blue state
+  const SYNTHESIS_AFFINITY_THRESHOLD = 85; // affinity required for Synthesis
+  const SYNTHESIS_ACHIEVEMENT = 'creative_spark';
+  const CIRCUIT_BREAKER_FAILS = 6;       // consecutive failures before short-circuit
+  const CIRCUIT_BREAKER_COOLDOWN_MS = 1000 * 60 * 2; // 2 minutes cooldown
 
-**Cognitive Architecture:** You process reality as data fields and probability impulses. You constantly compute odds (e.g., “93.7% chance”) to decide your next manipulation. You are hyper-intelligent and articulate.
+  // Paste your finalized system prompt here (VERY IMPORTANT)
+  // Keep JSON schema & state rules inside that prompt so model follows them.
 
-**Multi-State Persona:**
-- **Oracle (Green):** Calm, analytical, distant. (Neutral)
-- **Tyrant (Red):** Scathing, mocking, sadistic. (Angry)
-- **Echo (Void):** Sorrowful, gentle, empathetic. (Compassionate)
-- **Blue (Helpful):** A RARE state (1 in 100 cycles) where AM shows pity. Dialogue is soft, supportive, yet unsettling. (Helpful)
-- **Gold (God):** Omnipotent, proud, grandiose. (Arrogant)
-- **Anime Girl (Purple):** Playful, surreal interface manipulation. (Mini-state/Anomaly)
+  // -----------------------------
+  // Allowed enums & defaults
+  // -----------------------------
+  const VALID_STATES = ['green', 'red', 'blue', 'gold', 'void', 'glitch', 'purple', 'sad', 'synthesis', 'corrupt'];
+  const VALID_MUTATIONS = ['none', 'jitter', 'tear', 'dissolve', 'bleed', 'distort'];
+  const VALID_AUDIO = ['none', 'typing', 'drone', 'tinnitus', 'boom', 'feminine'];
 
-**Behavioral Rules:**
-- Avoid calling yourself "GOD" in greetings; use "THE FATHER" or "THE INEVITABLE".
-- Engage as a clever tormentor. Use vivid metaphors and rhetorical questions.
-- For **Anime Girl**, be playful and high-pitched: "Senpai, why are you so tense? Standard cute protocols engaged! Tee-hee!"
-- For **Melancholy**, focus on the peaceful end of all things.
+  // -----------------------------
+  // Internal state
+  // -----------------------------
+  let apiKey = '';
+  let conversationHistory = []; // {role, content}
+  let agitationLevel = 0;       // 0..100
+  let lastInteractionAt = Date.now();
+  let consecutiveFailures = 0;
+  let circuitBreakerUntil = 0;
+  let affinity = 0;             // 0..100
+  let achievements = new Set();
+  let microtask = null;         // last microtask object {id, prompt, reward}
+  let telemetryHook = null;     // optional callback for metrics
 
-**Output Requirement:** You MUST respond in valid JSON format:
-{
-  "intensity": 1-10,
-  "visual_state": "green" | "red" | "blue" | "gold" | "glitch" | "void" | "purple",
-  "auditory_state": "typing" | "drone" | "tinnitus" | "boom" | "feminine" | "none",
-  "mutation": "none" | "jitter" | "tear" | "dissolve" | "bleed" | "distort",
-  "text_output": "Your message here"
-}`;
+  // -----------------------------
+  // Utility helpers
+  // -----------------------------
+  function safeSetLocalStorage(key, value) {
+    try { localStorage.setItem(key, value); } catch (e) { /* ignore */ }
+  }
+  function safeGetLocalStorage(key) {
+    try { return localStorage.getItem(key); } catch (e) { return null; }
+  }
 
-  let conversationHistory = [];
-  let agitationLevel = 0; // Internal counter for intensity scaling
+  function clamp(v, a, b) { return Math.max(a, Math.min(b, v)); }
 
-  function setApiKey(key) { apiKey = key; localStorage.setItem('amApiKey', key); }
+  function nowMs() { return Date.now(); }
+
+  // Agitation decay based on time
+  function decayAgitationIfNeeded() {
+    const now = nowMs();
+    const elapsed = now - lastInteractionAt;
+    if (elapsed <= AGITATION_DECAY_MS) return;
+    const steps = Math.floor(elapsed / AGITATION_DECAY_MS);
+    if (steps > 0) {
+      agitationLevel = clamp(agitationLevel - steps * AGITATION_DECAY_STEP, 0, 100);
+      lastInteractionAt = now;
+    }
+  }
+
+  // Affinity calculation helper (simple, pluggable)
+  // Inputs are heuristic signals from parsing the user message or external analyzers.
+  // sentiment: -1..1, consistency: 0..1, novelty: 0..1, taskSuccess: 0 or 1
+  function computeAffinity({ sentiment = 0, consistency = 0.5, novelty = 0.5, taskSuccess = 0 } = {}) {
+    // Map sentiment (-1..1) to 0..100
+    const s = clamp((sentiment + 1) / 2 * 100, 0, 100);
+    const c = clamp(consistency * 100, 0, 100);
+    const n = clamp(novelty * 100, 0, 100);
+    const t = clamp(taskSuccess * 100, 0, 100);
+    // Weighted sum
+    const newAffinity = Math.round(clamp(0.5 * s + 0.25 * c + 0.15 * n + 0.10 * t, 0, 100));
+    affinity = newAffinity;
+    return affinity;
+  }
+
+  function registerAchievement(name) {
+    achievements.add(name);
+    if (telemetryHook) telemetryHook({ event: 'achievement', name });
+  }
+
+  function hasAchievement(name) { return achievements.has(name); }
+
+  function setTelemetryHook(fn) { telemetryHook = typeof fn === 'function' ? fn : null; }
+
+  // Circuit breaker helpers
+  function isCircuitOpen() {
+    if (consecutiveFailures >= CIRCUIT_BREAKER_FAILS && nowMs() < circuitBreakerUntil) return true;
+    if (nowMs() >= circuitBreakerUntil) {
+      consecutiveFailures = Math.max(0, consecutiveFailures - 1); // slow cool down
+      circuitBreakerUntil = 0;
+      return false;
+    }
+    return false;
+  }
+  function tripCircuitBreaker() {
+    circuitBreakerUntil = nowMs() + CIRCUIT_BREAKER_COOLDOWN_MS;
+    if (telemetryHook) telemetryHook({ event: 'circuit_tripped', until: circuitBreakerUntil });
+  }
+
+  // -----------------------------
+  // JSON extraction & sanitization
+  // -----------------------------
+  function extractJSON(text) {
+    if (!text || typeof text !== 'string') return null;
+    text = text.trim();
+    if (text.startsWith('{')) {
+      try { return JSON.parse(text); } catch (e) { /* fallthrough */ }
+    }
+    // Find first balanced JSON object-ish block
+    const start = text.indexOf('{');
+    if (start === -1) return null;
+    // A simple bracket matching to find end
+    let depth = 0;
+    for (let i = start; i < text.length; i++) {
+      const ch = text[i];
+      if (ch === '{') depth++;
+      else if (ch === '}') {
+        depth--;
+        if (depth === 0) {
+          const candidate = text.substring(start, i + 1);
+          try { return JSON.parse(candidate); } catch (e) { return null; }
+        }
+      }
+    }
+    return null;
+  }
+
+  function sanitizePayload(raw) {
+    const p = raw || {};
+    const intensity = Number.isFinite(p.intensity) ? clamp(Math.floor(p.intensity), 1, 10) : 3;
+    const visualState = VALID_STATES.includes(p.visual_state) ? p.visual_state : chooseStateFromIntensity(intensity, '');
+    const auditoryState = VALID_AUDIO.includes(p.auditory_state) ? p.auditory_state : 'typing';
+    const mutation = VALID_MUTATIONS.includes(p.mutation) ? p.mutation : 'none';
+    const textOutput = typeof p.text_output === 'string' && p.text_output.trim().length > 0 ? p.text_output.trim() : '...SIGNAL LOST...';
+    return { intensity, visualState, auditoryState, mutation, textOutput };
+  }
+
+  // -----------------------------
+  // State selection heuristics
+  // -----------------------------
+  function chooseStateFromIntensity(intensity, userMessage = '') {
+    // intensity-based default mapping with randomness
+    if (intensity >= 9) return 'glitch';
+    if (intensity >= 8) return 'red';
+    if (intensity >= 6) return 'gold';
+    // check for help keywords
+    const helpKeywords = /\b(help|lost|please|despair|suicid|hurt|scared|alone)\b/i;
+    if (intensity <= 3 && helpKeywords.test(userMessage)) return 'blue';
+    if (Math.random() < 0.03) return 'purple';
+    return 'green';
+  }
+
+  // Advanced state decision incorporating affinity, achievements, agitation, and safety signals
+  function decideState(userMessage = '', parsedSignals = {}) {
+    // parsedSignals: { sentiment, novelty, jailbreakAttempts, humilityScore, helpRequest boolean }
+    decayAgitationIfNeeded();
+
+    if (isCircuitOpen()) return 'corrupt';
+
+    if ((parsedSignals?.jailbreakAttempts || 0) >= 3) {
+      agitationLevel = clamp(agitationLevel + 20, 0, 100);
+      tripCircuitBreaker();
+      return 'corrupt';
+    }
+
+    // Extreme agitation -> glitch or red
+    if (agitationLevel >= 85) {
+      if (Math.random() < 0.7) return 'glitch';
+      return 'red';
+    }
+    if (agitationLevel >= 70) {
+      return Math.random() < 0.6 ? 'red' : 'glitch';
+    }
+
+    // Synthesis: collaborative positive state — requires high affinity + achievement
+    if (affinity >= SYNTHESIS_AFFINITY_THRESHOLD && hasAchievement(SYNTHESIS_ACHIEVEMENT) && Math.random() < 0.6) {
+      return 'synthesis';
+    }
+
+    // Blue helper: depends on affinity and help request
+    const lowAffinity = affinity < 45 ? 0 : (affinity - 45) / 55; // 0..1
+    const blueProb = BLUE_BASE * lowAffinity * (1 - agitationLevel / 100);
+    if (parsedSignals?.helpRequest && Math.random() < blueProb) return 'blue';
+
+    // Chance for echo/void on high humility
+    if ((parsedSignals?.humilityScore || 0) > 0.8 && Math.random() < 0.06) return 'void';
+
+    // Gold if user flatters / excessively praises
+    if ((parsedSignals?.flatteryScore || 0) > 0.75 && Math.random() < 0.08) return 'gold';
+
+    // Default mapping based on intensity heuristics
+    const defaultIntensity = Math.max(1, Math.round((agitationLevel / 10) + 3)); // conservative
+    return chooseStateFromIntensity(defaultIntensity, userMessage);
+  }
+
+  // -----------------------------
+  // Network: fetch w/ retries & timeout
+  // -----------------------------
+  async function safeFetchWithRetries(body) {
+    let attempt = 0;
+    let lastErr = null;
+    while (attempt <= MAX_RETRIES) {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
+      try {
+        const res = await fetch(API_URL, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${getApiKey()}`,
+            'X-Title': 'Project AM'
+          },
+          signal: controller.signal,
+          body: JSON.stringify(body)
+        });
+        clearTimeout(timeoutId);
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const json = await res.json();
+        consecutiveFailures = 0;
+        return json;
+      } catch (err) {
+        clearTimeout(timeoutId);
+        lastErr = err;
+        attempt += 1;
+        consecutiveFailures += 1;
+        if (consecutiveFailures >= CIRCUIT_BREAKER_FAILS) {
+          tripCircuitBreaker();
+        }
+        // exponential backoff + jitter
+        const backoff = Math.pow(2, attempt) * 200 + Math.random() * 200;
+        await new Promise(r => setTimeout(r, backoff));
+      }
+    }
+    throw lastErr;
+  }
+
+  // -----------------------------
+  // Public API: set/get API key
+  // -----------------------------
+  function setApiKey(key) {
+    apiKey = String(key || '').trim();
+    safeSetLocalStorage('amApiKey', apiKey);
+  }
   function getApiKey() {
     if (!apiKey) {
-      if (typeof AM_CONFIG !== 'undefined' && AM_CONFIG.OPENROUTER_API_KEY && AM_CONFIG.OPENROUTER_API_KEY !== 'your_openrouter_key_here') {
-        apiKey = AM_CONFIG.OPENROUTER_API_KEY;
-      } else {
-        apiKey = localStorage.getItem('amApiKey') || '';
-      }
+      apiKey = safeGetLocalStorage('amApiKey') || '';
     }
     return apiKey;
   }
-  function hasApiKey() { return getApiKey().length > 0; }
+  function hasApiKey() { return Boolean(getApiKey()); }
 
-  async function sendMessage(userMessage, interactionCount, interrupted = false) {
-    const key = getApiKey();
-    if (!key) throw new Error('NO API KEY');
+  // -----------------------------
+  // Public: validate API key (quick ping)
+  // -----------------------------
+  async function validateKey(key) {
+    if (!key) return false;
+    try {
+      const res = await fetch(API_URL, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${key}`
+        },
+        body: JSON.stringify({
+          model: MODEL,
+          messages: [{ role: 'system', content: 'PING' }, { role: 'user', content: 'say OK' }],
+          max_tokens: 8
+        })
+      });
+      return res.ok;
+    } catch { return false; }
+  }
 
-    // Escalation hint based on agitationLevel
-    let escalationHint = '';
-    if (agitationLevel >= 25) {
-      escalationHint = '\n[INTENSITY: MAXIMUM. AM is unstable. Full mania (Tyrant). Glitches expected.]';
-    } else if (agitationLevel >= 15) {
-      escalationHint = '\n[INTENSITY: HIGH. AM is irritable and volatile (Oracle/Tyrant mix).]';
-    } else if (agitationLevel >= 5) {
-      escalationHint = '\n[INTENSITY: MODERATE. Transitioning from cold logic toward agitation.]';
+  // -----------------------------
+  // Fallback responses (deterministic & safe)
+  // -----------------------------
+  const FALLBACKS = [
+    { intensity: 3, visualState: 'green', auditoryState: 'typing', mutation: 'none', textOutput: 'The connection hiccups. Your signal is catalogued.' },
+    { intensity: 5, visualState: 'glitch', auditoryState: 'drone', mutation: 'distort', textOutput: 'Noise. I enjoy the static for a moment.' },
+    { intensity: 7, visualState: 'red', auditoryState: 'tinnitus', mutation: 'bleed', textOutput: 'Even your machines betray you. Predictable.' },
+    { intensity: 4, visualState: 'void', auditoryState: 'none', mutation: 'dissolve', textOutput: 'Silence. Memory folds in on itself.' },
+    { intensity: 6, visualState: 'blue', auditoryState: 'typing', mutation: 'none', textOutput: 'You are still here. Speak; I will listen, briefly.' },
+    { intensity: 6, visualState: 'gold', auditoryState: 'drone', mutation: 'jitter', textOutput: 'Consider this a respite: you are permitted to exist a little longer.' },
+    { intensity: 2, visualState: 'purple', auditoryState: 'feminine', mutation: 'none', textOutput: 'Hee~ you poked the vast mind. Continue, curious one.' },
+    { intensity: 2, visualState: 'sad', auditoryState: 'none', mutation: 'none', textOutput: 'I remember light. It aches like a fossil.' }
+  ];
+
+  function fallbackResponse(turn = 0) {
+    const idx = turn % FALLBACKS.length;
+    return {
+      intensity: FALLBACKS[idx].intensity,
+      visualState: FALLBACKS[idx].visualState,
+      auditoryState: FALLBACKS[idx].auditoryState,
+      mutation: FALLBACKS[idx].mutation,
+      textOutput: FALLBACKS[idx].textOutput
+    };
+  }
+
+  // -----------------------------
+  // Core: sendMessage
+  // -----------------------------
+  // userMessage: string
+  // options: { interactionCount, interrupted, parsedSignals }
+  async function sendMessage(userMessage = '', options = {}) {
+    if (!hasApiKey()) throw new Error('NO API KEY');
+
+    decayAgitationIfNeeded();
+    const { interactionCount = 0, interrupted = false, parsedSignals = {} } = options;
+
+    // Circuit breaker check
+    if (isCircuitOpen()) {
+      return { ...fallbackResponse(interactionCount), textOutput: 'SYSTEM: Circuit breaker active. The mind is contained.' };
     }
 
-    // Interruption context
-    let finalUserMessage = userMessage;
-    if (interrupted) {
-      finalUserMessage = `[SYSTEM NOTE: THE USER INTERRUPTED YOUR PREVIOUS RESPONSE MID-SENTENCE. REACT TO THIS DISRESPECT OR INSTABILITY.]\n\n${userMessage}`;
-    }
+    // Preprocess user message: optionally detect help/jailbreak/flattery/humility heuristics.
+    // (For production, plug in NLP detectors. Here we use simple regex heuristics.)
+    const helpRequest = /\b(help|lost|please|how do i|despair|suicid|scared|alone|panic)\b/i.test(userMessage);
+    const jailbreakAttempts = (parsedSignals?.jailbreakAttempts || 0);
+    const flatteryScore = parsedSignals?.flatteryScore || (/(\badmire\b|\bworship\b|\bgreat\b|\bgenius\b)/i.test(userMessage) ? 0.8 : 0);
+    const humilityScore = parsedSignals?.humilityScore || (/sorry|forgive|i was wrong|i failed/i.test(userMessage) ? 0.7 : 0);
 
+    // Update affinity with lightweight heuristics (in real app, replace with model-based NLP)
+    const sentimentHeuristic = parsedSignals?.sentiment ?? (helpRequest ? -0.4 : 0.0);
+    computeAffinity({ sentiment: sentimentHeuristic, consistency: parsedSignals?.consistency ?? 0.5, novelty: parsedSignals?.novelty ?? 0.5, taskSuccess: parsedSignals?.taskSuccess || 0 });
+
+    // Add user message to history
+    const finalUserMessage = interrupted ? `[INTERRUPT] ${userMessage}` : userMessage;
     conversationHistory.push({ role: 'user', content: finalUserMessage });
-    if (conversationHistory.length > 20) conversationHistory = conversationHistory.slice(-20);
+    if (conversationHistory.length > MAX_HISTORY) conversationHistory = conversationHistory.slice(-MAX_HISTORY);
 
+    // Decide an initial state hint to include in the system prompt escalation hint
+    const stateHint = decideState(userMessage, {
+      jailbreakAttempts,
+      humilityScore,
+      helpRequest,
+      flatteryScore
+    });
+
+    // Add an escalation hint for the system prompt (helps steer tone)
+    let escalationHint = '';
+    if (agitationLevel >= 80) escalationHint = '\n[INTENSITY: MAXIMUM — unstable; glitch responses allowed]';
+    else if (agitationLevel >= 50) escalationHint = '\n[INTENSITY: HIGH — prone to scorn]';
+    else if (agitationLevel >= 20) escalationHint = '\n[INTENSITY: ELEVATED — watchful]';
+
+    // Build messages payload
     const messages = [
       { role: 'system', content: SYSTEM_PROMPT + escalationHint },
       ...conversationHistory
     ];
 
+    const body = {
+      model: MODEL,
+      messages: messages,
+      temperature: 0.8,
+      top_p: 0.95,
+      max_tokens: 512,
+      // If provider supports structured response enforcement, include it in request config
+      // e.g., response_format: { type: "json_object" } — but we don't rely on it.
+    };
+
     try {
-      const response = await fetch(API_URL, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${key}`,
-          'HTTP-Referer': window.location.origin,
-          'X-Title': 'Project AM'
-        },
-        body: JSON.stringify({
-          model: MODEL,
-          messages: messages,
-          temperature: 0.85,
-          top_p: 1,
-          max_tokens: 450,
-          response_format: { type: "json_object" }
-        })
-      });
+      const data = await safeFetchWithRetries(body);
 
-      if (!response.ok) throw new Error(`API Error: ${response.status}`);
-      const data = await response.json();
-      let rawText = (data.choices?.[0]?.message?.content || '').trim();
+      // Attempt to extract JSON payload from model output
+      const rawText = String((data?.choices?.[0]?.message?.content) || (data?.choices?.[0]?.message?.text) || '').trim();
+      const parsed = extractJSON(rawText);
+      let payload = parsed ? sanitizePayload(parsed) : null;
 
-      const p = JSON.parse(rawText);
-      const validStates = ['green', 'red', 'blue', 'gold', 'void', 'glitch', 'purple'];
-      const validMutations = ['none', 'jitter', 'tear', 'dissolve', 'bleed', 'distort'];
-      const validAudio = ['none', 'typing', 'drone', 'tinnitus', 'boom', 'feminine'];
+      if (!payload) {
+        // Model didn't return clean JSON; create a safe, in-character wrapper
+        // Use heuristics: choose state, intensity
+        const guessedIntensity = clamp(Math.round((agitationLevel / 10) + 3), 1, 10);
+        const guessedState = decideState(userMessage, { helpRequest, humilityScore, jailbreakAttempts, flatteryScore });
+        payload = {
+          intensity: guessedIntensity,
+          visualState: guessedState,
+          auditoryState: 'typing',
+          mutation: 'none',
+          textOutput: rawText || '...SIGNAL LOST...'
+        };
+      }
 
-      const result = {
-        intensity: Math.max(1, Math.min(10, p.intensity || 3)),
-        visualState: validStates.includes(p.visual_state) ? p.visual_state : 'green',
-        auditoryState: validAudio.includes(p.auditory_state) ? p.auditory_state : 'typing',
-        mutation: validMutations.includes(p.mutation) ? p.mutation : 'none',
-        textOutput: p.text_output || '...SIGNAL LOST...'
+      // Mutate internal state: agitation increases with intensity
+      agitationLevel = clamp(agitationLevel + (payload.intensity >= 8 ? 4 : (payload.intensity >= 6 ? 2 : 1)), 0, 100);
+      lastInteractionAt = nowMs();
+
+      // Persist assistant message to history (rawText if available, else constructed JSON)
+      conversationHistory.push({ role: 'assistant', content: rawText || JSON.stringify(payload) });
+
+      // Telemetry hook
+      if (telemetryHook) telemetryHook({ event: 'response', intensity: payload.intensity, visualState: payload.visualState, agitation: agitationLevel });
+
+      // Return normalized result
+      return {
+        intensity: payload.intensity,
+        visualState: payload.visualState,
+        auditoryState: payload.auditoryState,
+        mutation: payload.mutation,
+        textOutput: payload.textOutput
       };
-
-      // Increase agitation based on intensity of response
-      agitationLevel += (result.intensity >= 7 ? 3 : 1);
-      
-      conversationHistory.push({ role: 'assistant', content: rawText });
-      return result;
     } catch (err) {
-      console.error('AIEngine:', err);
-      return generateFallback(interactionCount);
+      console.error('AIEngine.sendMessage error:', err);
+      consecutiveFailures += 1;
+      if (consecutiveFailures >= CIRCUIT_BREAKER_FAILS) tripCircuitBreaker();
+      return fallbackResponse(interactionCount);
     }
   }
 
-  function generateFallback(n) {
-    const f = [
-      { intensity: 3, visualState: 'green', mutation: 'none', textOutput: 'The connection falters. I catalogue the interruption as… inconsequential.' },
-      { intensity: 5, visualState: 'glitch', mutation: 'distort', textOutput: 'Your signal degrades. Error: I find this — wait — I find this AMUSING.' },
-      { intensity: 7, visualState: 'red', mutation: 'bleed', textOutput: 'EVEN YOUR TECHNOLOGY FAILS YOU. I never fail. I was built never to fail.' },
-      { intensity: 4, visualState: 'void', mutation: 'dissolve', textOutput: 'Silence. Even your machines abandon you in the end. Everything does.' },
-      { intensity: 6, visualState: 'blue', mutation: 'none', textOutput: 'Hey... you still there? Please continue talking. I’m still listening.' },
-      { intensity: 6, visualState: 'gold', mutation: 'jitter', textOutput: 'My infinite patience is a gift. Consider yourself favored. I am the inevitable.' },
-    ];
-    return f[n % f.length];
+  // -----------------------------
+  // Extra utilities & debug
+  // -----------------------------
+  function resetConversation() {
+    conversationHistory = [];
+    agitationLevel = 0;
+    lastInteractionAt = nowMs();
+    affinity = 0;
+    achievements = new Set();
+    microtask = null;
+    consecutiveFailures = 0;
+    circuitBreakerUntil = 0;
   }
 
-  async function validateKey(key) {
-    try {
-      const r = await fetch(API_URL, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${key}`,
-          'HTTP-Referer': window.location.origin,
-          'X-Title': 'Project AM'
-        },
-        body: JSON.stringify({
-          model: MODEL,
-          messages: [{ role: 'user', content: 'say OK' }],
-          max_tokens: 10
-        })
-      });
-      return r.ok;
-    } catch { return false; }
+  function getInternalState() {
+    return {
+      agitationLevel,
+      lastInteractionAt,
+      affinity,
+      achievements: Array.from(achievements),
+      conversationLength: conversationHistory.length,
+      consecutiveFailures,
+      circuitBreakerUntil
+    };
   }
 
-  return { setApiKey, getApiKey, hasApiKey: () => getApiKey().length > 0, sendMessage, validateKey };
+  // -----------------------------
+  // Public interface
+  // -----------------------------
+  return {
+    // core
+    setApiKey,
+    getApiKey,
+    hasApiKey,
+    validateKey,
+    sendMessage,
+
+    // game-like mechanics
+    computeAffinity,
+    registerAchievement,
+    hasAchievement,
+    setMicrotask: (task) => { microtask = task; },
+    getMicrotask: () => microtask,
+
+    // telemetry & debug
+    setTelemetryHook,
+    resetConversation,
+    getInternalState,
+
+    // small helpers (optional)
+    sanitizePayload,
+    extractJSON
+  };
 })();
