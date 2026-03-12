@@ -30,13 +30,14 @@
   --clr-warning:     var(--eva-red);
 
   /* Typography */
-  --font-data:    'Rajdhani', sans-serif;
-  --font-display: 'Rajdhani', sans-serif;
-  --font-label:   'Rajdhani', sans-serif;
-  --font-pixel:   'Rajdhani', sans-serif;
-  --font-main:    'Rajdhani', sans-serif;
+  --font-data:    'Share Tech Mono', monospace;
+  --font-display: 'VT323', monospace;
+  --font-label:   'VT323', monospace;
+  --font-pixel:   'VT323', monospace;
+  --font-main:    'VT323', monospace;
   --font-haunted: 'Nosifer', cursive;
   --font-terror:  'Caesar Dressing', cursive;
+  --font-terminal: 'Share Tech Mono', monospace;
 
   --state-transition: 1.2s cubic-bezier(0.19, 1, 0.22, 1);
   --scanline-opacity: 0.15;
@@ -53,8 +54,8 @@ body.state-green {
   --clr-glow: rgba(0, 255, 65, 0.25);
   --clr-glow-strong: rgba(0, 255, 65, 0.7);
 }
-body.state-green #am-text { font-family: var(--font-main); font-size: 1.6rem; letter-spacing: 0.5px; font-weight: 500; }
-body.state-green #user-input { font-family: var(--font-main); }
+body.state-green #am-text { font-family: var(--font-terminal); font-size: 1.6rem; letter-spacing: 0.5px; font-weight: 500; }
+body.state-green #user-input { font-family: var(--font-terminal); }
 
 /* State: Red — Mania (TYRANT: Aggressive, Large, Pulsing) */
 body.state-red {
@@ -87,11 +88,11 @@ body.state-void {
   --clr-glow: rgba(75, 0, 130, 0.4);
 }
 body.state-void #am-text { 
-  font-family: var(--font-main); 
-  font-size: 1.9rem; 
-  letter-spacing: 0.2px;
+  font-family: var(--font-display); 
+  font-size: 2.1rem; 
+  letter-spacing: 0.5px;
   line-height: 1.4;
-  opacity: 0.9;
+  opacity: 0.8;
   filter: none;
 }
 
@@ -103,8 +104,8 @@ body.state-blue {
   --clr-glow-strong: rgba(47, 128, 237, 0.7);
 }
 body.state-blue #am-text { 
-  font-family: var(--font-main); 
-  font-size: 1.7rem; 
+  font-family: var(--font-terminal); 
+  font-size: 1.5rem; 
   opacity: 1;
   filter: none;
 }
@@ -148,8 +149,8 @@ body.state-purple {
   --clr-accent: #ff00ff;
 }
 body.state-purple #am-text {
-  font-family: 'VT323', monospace;
-  font-size: 2.1rem;
+  font-family: var(--font-display);
+  font-size: 2.4rem;
   font-weight: 700;
   text-shadow: 1px 1px 0px rgba(0,0,0,0.5), 0 0 8px var(--clr-glow);
   animation: float-cute 2.5s ease-in-out infinite;
@@ -578,9 +579,9 @@ body::after {
    ========================================= */
 .flash-overlay {
   position: fixed; inset: 0;
-  z-index: 900;
+  z-index: 5; /* Lowered below terminal to reduce distraction */
   display: flex; align-items: center; justify-content: center;
-  background: rgba(0,0,0,0.88);
+  background: rgba(0,0,0,0.2);
   pointer-events: none;
   transition: opacity 0.08s;
 }
@@ -1262,8 +1263,8 @@ body.state-horror #background-manifestation {
   animation: vhs-track 0.1s steps(2) infinite;
 }
 @keyframes vhs-track {
-  0%, 100% { transform: translateY(0) scaleY(1); filter: contrast(1); }
-  50% { transform: translateY(-15px) scaleY(1.05) skewX(2deg); filter: contrast(5) invert(0.05); }
+  0%, 100% { transform: translateY(0); filter: contrast(1); }
+  50% { transform: translateY(-5px) skewX(1deg); filter: contrast(1.2); }
 }
 
 /* Techno-Nihilist Overlay */
@@ -1397,6 +1398,7 @@ body.visual-hysteria #terminal {
   filter: grayscale(0.2) saturate(1.8) contrast(1.2) brightness(1.1) !important;
   opacity: 0.5 !important;
   mix-blend-mode: hard-light;
+  z-index: -2 !important; /* Keep behind text */
   transition: all 0.5s ease;
 }
 

@@ -459,7 +459,7 @@ const VisualEngine = (() => {
   /**
    * Logic Error: Momentary UI inversion
    */
-  function triggerLogicError(duration = 100) {
+  function triggerLogicError(duration = 50) {
     const body = document.body;
     body.classList.add('logic-error');
     AudioEngine.playStatic(0.1);
@@ -506,8 +506,8 @@ const VisualEngine = (() => {
       }
 
       overlay.classList.remove('hidden');
-      overlay.style.backgroundColor = 'rgba(0,0,0,0.2)'; // Much lower impact
-      overlay.style.filter = `contrast(150%)`;
+      overlay.style.backgroundColor = 'transparent'; // Remove black flash
+      overlay.style.filter = `contrast(130%)`;
 
       AudioEngine.playStatic(0.1);
       
@@ -569,7 +569,7 @@ const VisualEngine = (() => {
     img.src = tempCanvas.toDataURL();
     overlay.classList.remove('hidden');
     overlay.style.mixBlendMode = 'color-dodge';
-    overlay.style.filter = 'contrast(400%) invert(1)';
+    overlay.style.filter = 'contrast(200%)';
 
     AudioEngine.playStatic(0.3); // Softened volume
 
