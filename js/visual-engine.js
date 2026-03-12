@@ -109,7 +109,35 @@ const VisualEngine = (() => {
    */
   let lastImageSwapTime = 0;
 
+  function setBackgroundImage(filename, intensity = 5) {
+    const bgLayer = document.getElementById('background-manifestation');
+    if (!bgLayer) return;
+
+    bgLayer.classList.remove('flash-glitch-active');
+    void bgLayer.offsetWidth; // Force reflow
+    
+    bgLayer.style.backgroundImage = `url('images/${filename}')`;
+    
+    let filter = 'grayscale(0.8) contrast(150%) brightness(0.8)';
+    if (currentState === 'purple') {
+      filter = 'saturate(1.5) contrast(120%) brightness(1.1)';
+      bgLayer.classList.add('waifu-mode');
+    } else if (currentState === 'red') {
+      filter = 'grayscale(0.3) contrast(200%) brightness(1.2)';
+    }
+
+    bgLayer.style.filter = filter;
+    bgLayer.style.opacity = intensity >= 8 ? '0.4' : '0.2';
+    bgLayer.classList.add('flash-glitch-active');
+    
+    currentStateGif = filename;
+    lastImageSwapTime = Date.now();
+  }
+
   function updateBackground(intensity, forceHorror = false) {
+    // If we're in a specialized state with a fixed background, skip auto-rotation
+    if (currentState === 'purple' && currentStateGif === 'waifu.gif') return;
+
     const bgLayer = document.getElementById('background-manifestation');
     if (!bgLayer) return;
 
@@ -119,75 +147,25 @@ const VisualEngine = (() => {
     else if (intensity >= 4) category = 'medium';
 
     const now = Date.now();
-    // Swap rate depends on intensity (low = 10s, high = 0.5s)
     const swapInterval = Math.max(500, 10000 - (intensity * 950));
 
-    // Priority 1: State-specific GIFs for intense states
     const hasStateGif = stateGifs[currentState];
     const shouldShowGif = hasStateGif && (intensity >= 5 || forceHorror || Math.random() < 0.2);
 
     if (shouldShowGif) {
       const pool = stateGifs[currentState];
       const gif = pool[Math.floor(Math.random() * pool.length)];
-      
       if (gif !== currentStateGif || (now - lastImageSwapTime > swapInterval)) {
-        currentStateGif = gif;
-        lastImageSwapTime = now;
-        
-        bgLayer.classList.remove('flash-glitch-active');
-        void bgLayer.offsetWidth; // Force reflow
-        
-        bgLayer.style.backgroundImage = `url('images/${gif}')`;
-        
-        let filter = 'grayscale(0.8) contrast(150%) brightness(0.8)';
-        if (currentState === 'red' || currentState === 'glitch') {
-          filter = `grayscale(0.3) contrast(${150 + intensity * 20}%) brightness(${1.0 + intensity * 0.05})`;
-        } else if (currentState === 'gold') {
-          filter = `sepia(1) saturate(3) contrast(150%) brightness(${1.0 + intensity * 0.05})`;
-        }
-
-        bgLayer.style.filter = filter;
-        bgLayer.style.opacity = intensity >= 8 ? '0.35' : '0.15'; // Softened opacity
-        bgLayer.classList.add('flash-glitch-active');
-
-        // Extra chaos at intensity 10
-        if (intensity >= 10 && Math.random() < 0.25) { // Reduced chaos frequency
-             triggerDigitalGlitch(true);
-             setTimeout(() => triggerDigitalGlitch(false), 200);
-        }
+        setBackgroundImage(gif, intensity);
       }
       return;
     }
 
-    // Priority 2: Standard JPG logic
     if (category !== currentBgCategory || (now - lastImageSwapTime > swapInterval)) {
       currentBgCategory = category;
-      lastImageSwapTime = now;
-      currentStateGif = ''; // Reset gif tracking when falling back to JPGs
-      
-      let pool = bgImages[category];
-      
-      // 20% chance to bleed an image from a different category
-      if (Math.random() < 0.2 && !forceHorror) {
-        const allKeys = Object.keys(bgImages);
-        pool = bgImages[allKeys[Math.floor(Math.random() * allKeys.length)]];
-      }
-      
+      const pool = bgImages[category];
       const img = pool[Math.floor(Math.random() * pool.length)];
-      
-      bgLayer.classList.remove('flash-glitch-active');
-      void bgLayer.offsetWidth;
-      
-      bgLayer.style.backgroundImage = `url('images/${img}')`;
-      bgLayer.style.filter = category === 'horror' 
-        ? 'grayscale(1) contrast(300%) brightness(1.1) sepia(1)' 
-        : 'grayscale(1) contrast(180%) brightness(0.9)';
-      bgLayer.style.opacity = category === 'horror' ? '0.22' : '0.15';
-      
-      bgLayer.classList.add('flash-glitch-active');
-      if (intensity > 3 && Math.random() < 0.3) {
-        AudioEngine.playStatic(0.15);
-      }
+      setBackgroundImage(img, intensity);
     }
   }
 
@@ -315,60 +293,81 @@ const VisualEngine = (() => {
     const bgLayer = document.getElementById('background-manifestation');
     
     // Clear ALL previous state classes
-    body.classList.remove('state-green', 'state-red', 'state-void', 'state-glitch', 'state-gold', 'state-blue', 'state-purple');
+    body.classList.remove('state-green', 'state-red', 'state-void', 'state-glitch', 'state-gold', 'state-blue', 'state-purple', 'state-sad', 'state-synthesis', 'state-infested');
     if (bgLayer) bgLayer.classList.remove('waifu-mode');
 
     if (state === 'red') {
       body.classList.add('state-red');
       currentState = 'red';
       body.style.backgroundColor = '#060000';
-      document.documentElement.style.setProperty('--clr-text', '#ff2b00');
-      document.documentElement.style.setProperty('--clr-glow', 'rgba(255,43,0,0.5)');
-      document.documentElement.style.setProperty('--clr-glow-strong', 'rgba(255,43,0,0.9)');
+      document.documentElement.style.setProperty('--clr-text', '#FF2E2E');
+      document.documentElement.style.setProperty('--clr-glow', 'rgba(255,46,46,0.5)');
+      document.documentElement.style.setProperty('--clr-glow-strong', 'rgba(255,46,46,0.9)');
     } else if (state === 'void') {
       body.classList.add('state-void');
       currentState = 'void';
-      body.style.backgroundColor = '#04070a';
-      document.documentElement.style.setProperty('--clr-text', '#c8c4b0');
-      document.documentElement.style.setProperty('--clr-glow', 'rgba(200,196,176,0.25)');
-      document.documentElement.style.setProperty('--clr-glow-strong', 'rgba(200,196,176,0.6)');
+      body.style.backgroundColor = '#040008';
+      document.documentElement.style.setProperty('--clr-text', '#4B0082');
+      document.documentElement.style.setProperty('--clr-glow', 'rgba(75,0,130,0.4)');
+      document.documentElement.style.setProperty('--clr-glow-strong', 'rgba(75,0,130,0.8)');
     } else if (state === 'glitch') {
       body.classList.add('state-glitch');
       currentState = 'glitch';
-      body.style.backgroundColor = '#03060a';
-      document.documentElement.style.setProperty('--clr-text', '#ff7a20');
-      document.documentElement.style.setProperty('--clr-glow', 'rgba(255,122,32,0.55)');
-      document.documentElement.style.setProperty('--clr-glow-strong', 'rgba(255,122,32,0.95)');
+      body.style.backgroundColor = '#030005';
+      document.documentElement.style.setProperty('--clr-text', '#FF00FF');
+      document.documentElement.style.setProperty('--clr-glow', 'rgba(255,0,255,0.55)');
+      document.documentElement.style.setProperty('--clr-glow-strong', 'rgba(255,0,255,0.95)');
     } else if (state === 'gold') {
       body.classList.add('state-gold');
       currentState = 'gold';
-      body.style.backgroundColor = '#07060a';
-      document.documentElement.style.setProperty('--clr-text', '#f5c518');
-      document.documentElement.style.setProperty('--clr-glow', 'rgba(245,197,24,0.45)');
-      document.documentElement.style.setProperty('--clr-glow-strong', 'rgba(245,197,24,0.9)');
+      body.style.backgroundColor = '#070600';
+      document.documentElement.style.setProperty('--clr-text', '#FFD166');
+      document.documentElement.style.setProperty('--clr-glow', 'rgba(255,209,102,0.45)');
+      document.documentElement.style.setProperty('--clr-glow-strong', 'rgba(255,209,102,0.9)');
     } else if (state === 'blue') {
-      body.classList.add('state-blue'); // Melancholy
+      body.classList.add('state-blue');
       currentState = 'blue';
       body.style.backgroundColor = '#000810';
-      document.documentElement.style.setProperty('--clr-text', '#7099dd');
-      document.documentElement.style.setProperty('--clr-glow', 'rgba(80,130,220,0.3)');
-      document.documentElement.style.setProperty('--clr-glow-strong', 'rgba(80,130,220,0.7)');
+      document.documentElement.style.setProperty('--clr-text', '#2F80ED');
+      document.documentElement.style.setProperty('--clr-glow', 'rgba(47,128,237,0.3)');
+      document.documentElement.style.setProperty('--clr-glow-strong', 'rgba(47,128,237,0.7)');
+    } else if (state === 'sad') {
+      body.classList.add('state-sad');
+      currentState = 'sad';
+      body.style.backgroundColor = '#080a0c';
+      document.documentElement.style.setProperty('--clr-text', '#6C7A89');
+      document.documentElement.style.setProperty('--clr-glow', 'rgba(108,122,137,0.25)');
+      document.documentElement.style.setProperty('--clr-glow-strong', 'rgba(108,122,137,0.6)');
+    } else if (state === 'synthesis') {
+      body.classList.add('state-synthesis');
+      currentState = 'synthesis';
+      body.style.backgroundColor = '#000a12';
+      document.documentElement.style.setProperty('--clr-text', '#00B7FF');
+      document.documentElement.style.setProperty('--clr-glow', 'rgba(0,183,255,0.4)');
+      document.documentElement.style.setProperty('--clr-glow-strong', 'rgba(0,183,255,0.8)');
+    } else if (state === 'infested') {
+      body.classList.add('state-infested');
+      currentState = 'infested';
+      body.style.backgroundColor = '#050000';
+      document.documentElement.style.setProperty('--clr-text', '#550000');
+      document.documentElement.style.setProperty('--clr-glow', 'rgba(85,0,0,0.5)');
+      document.documentElement.style.setProperty('--clr-glow-strong', 'rgba(85,0,0,0.9)');
     } else if (state === 'purple') {
-      body.classList.add('state-purple'); // Anime Girl
+      body.classList.add('state-purple');
       currentState = 'purple';
       body.style.backgroundColor = '#100015';
-      document.documentElement.style.setProperty('--clr-text', '#e070ff');
-      document.documentElement.style.setProperty('--clr-glow', 'rgba(224,112,255,0.4)');
-      document.documentElement.style.setProperty('--clr-glow-strong', 'rgba(224,112,255,0.9)');
+      document.documentElement.style.setProperty('--clr-text', '#C77DFF');
+      document.documentElement.style.setProperty('--clr-glow', 'rgba(199,125,255,0.4)');
+      document.documentElement.style.setProperty('--clr-glow-strong', 'rgba(199,125,255,0.9)');
       if (bgLayer) bgLayer.classList.add('waifu-mode');
     } else {
-      // green — Cold Observation (default state)
+      // green — Oracle (default)
       body.classList.add('state-green');
       currentState = 'green';
       body.style.backgroundColor = '#020604';
-      document.documentElement.style.setProperty('--clr-text', '#00ff41');
-      document.documentElement.style.setProperty('--clr-glow', 'rgba(0,255,65,0.35)');
-      document.documentElement.style.setProperty('--clr-glow-strong', 'rgba(0,255,65,0.8)');
+      document.documentElement.style.setProperty('--clr-text', '#21C07B');
+      document.documentElement.style.setProperty('--clr-glow', 'rgba(33,192,123,0.35)');
+      document.documentElement.style.setProperty('--clr-glow-strong', 'rgba(33,192,123,0.8)');
     }
   }
 
@@ -460,7 +459,7 @@ const VisualEngine = (() => {
   /**
    * Logic Error: Momentary UI inversion
    */
-  function triggerLogicError(duration = 200) {
+  function triggerLogicError(duration = 100) {
     const body = document.body;
     body.classList.add('logic-error');
     AudioEngine.playStatic(0.1);
@@ -484,7 +483,7 @@ const VisualEngine = (() => {
       if (flashCount > 5) {
         clearInterval(flashInterval);
         overlay.classList.add('hidden');
-        overlay.style.backgroundColor = 'rgba(0,0,0,0.85)';
+        overlay.style.backgroundColor = 'transparent';
         overlay.style.filter = 'none';
         img.src = '';
         return;
@@ -507,8 +506,8 @@ const VisualEngine = (() => {
       }
 
       overlay.classList.remove('hidden');
-      overlay.style.backgroundColor = Math.random() < 0.5 ? '#fff' : '#000';
-      overlay.style.filter = `invert(${Math.random() < 0.5 ? 1 : 0}) contrast(500%)`;
+      overlay.style.backgroundColor = 'rgba(0,0,0,0.2)'; // Much lower impact
+      overlay.style.filter = `contrast(150%)`;
 
       AudioEngine.playStatic(0.1);
       
@@ -742,7 +741,8 @@ const VisualEngine = (() => {
     triggerDigitalGlitch,
     triggerLogicError,
     triggerDreadFlash,
-    updateBackground
+    updateBackground,
+    setBackgroundImage
   };
 })();
 

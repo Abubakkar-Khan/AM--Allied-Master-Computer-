@@ -36,14 +36,13 @@
 }
 
 @keyframes frame-skip {
-  0% { opacity: 1; }
+  0%, 100% { opacity: 1; }
   40% { opacity: 1; }
-  42% { opacity: 0; }
+  42% { opacity: 0.8; }
   44% { opacity: 1; }
   70% { opacity: 1; }
-  72% { opacity: 0.1; }
+  72% { opacity: 0.85; }
   74% { opacity: 1; }
-  100% { opacity: 1; }
 }
 
 /* --- Signal Bleed (horizontal color offset layers) --- */

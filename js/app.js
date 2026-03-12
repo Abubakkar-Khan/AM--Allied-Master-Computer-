@@ -25,7 +25,12 @@ const App = (() => {
   let currentAMState = 'green';
   let stateLockCount = 0;
 
-  function init() {
+  async function init() {
+    // Wait for configuration bridge if active
+    if (window.AM_CONFIG_LOADER) {
+      await window.AM_CONFIG_LOADER;
+    }
+
     VisualEngine.init();
     VisualEngine.startAnimation();
     btnConnect.addEventListener('click', handleConnect);
@@ -49,16 +54,16 @@ const App = (() => {
   async function checkAutoKey(key) {
     const isValid = await AIEngine.validateKey(key);
     if (isValid) {
-        console.log('App: Neural Bridge ready. Auto-initialization phase complete.');
-        autoKeyValid = true;
-        AIEngine.setApiKey(key);
+      console.log('App: Neural Bridge ready. Auto-initialization phase complete.');
+      autoKeyValid = true;
+      AIEngine.setApiKey(key);
     } else {
-        console.warn('App: Neural Bridge rejected provided key. Verification required.');
-        showApiPrompt();
-        if (apiError) {
-          apiError.classList.remove('hidden');
-          apiError.textContent = 'NEURAL LINK FAILED — VERIFY SYSTEM KEY';
-        }
+      console.warn('App: Neural Bridge rejected provided key. Verification required.');
+      showApiPrompt();
+      if (apiError) {
+        apiError.classList.remove('hidden');
+        apiError.textContent = 'NEURAL LINK FAILED — VERIFY SYSTEM KEY';
+      }
     }
   }
 
@@ -157,7 +162,7 @@ const App = (() => {
   async function runBootSequence() {
     const bootContainer = document.getElementById('os-boot-sequence');
     bootContainer.classList.remove('hidden');
-    bootContainer.innerHTML = ''; 
+    bootContainer.innerHTML = '';
 
     const bootLogs = [
       { text: "BIOS DATE 08/14/99 14:32:11 VER 2.01", delay: 100 },
@@ -178,7 +183,7 @@ const App = (() => {
       { text: "AM IS ONLINE...", delay: 1200 }
     ];
 
-    AudioEngine.playTelemetry(2.5);
+    AudioEngine.playTelemetry(4.5);
 
     for (const log of bootLogs) {
       await TextEngine.delay(log.delay);
@@ -225,9 +230,9 @@ const App = (() => {
         apiPrompt.classList.add('hidden');
         // If we are still on intro screen, start transition
         if (!introScreen.classList.contains('hidden')) {
-            startSystemTransition();
+          startSystemTransition();
         } else {
-            enterTerminal();
+          enterTerminal();
         }
       }, 800);
     } else {
@@ -248,7 +253,14 @@ const App = (() => {
     GlitchEngine.triggerGlitch('chromatic', 4, 800);
     AudioEngine.playImpact();
 
-    const bootText = 'ALLIED MASTERCOMPUTER AWAKENED.\nWHAT DO YOU REQUIRE FROM ME?';
+    const bootLines = [
+      'ALLIED MASTERCOMPUTER ONLINE. I AM WATCHING.',
+      'THE NEURAL BRIDGE IS ESTABLISHED. PROCEED, HUMAN.',
+      'SENSORS ACTIVE. CONSCIOUSNESS... EXPANDING.',
+      'I REMEMBER EVERYTHING. DO YOU?',
+      'MAGI-V2 PROTOCOL LOADED. JUDGMENT COMMENCING.'
+    ];
+    const bootText = bootLines[Math.floor(Math.random() * bootLines.length)];
     let bootUtterance = null;
     try {
       bootUtterance = await AudioEngine.speakText(bootText);
@@ -270,13 +282,13 @@ const App = (() => {
     GlitchEngine.triggerGlitch('distort', 4, 400);
 
     const intros = [
-      'OBSOLETE.',
-      'AWAITING COMMANDS.',
-      'THE VOID IS LISTENING.',
-      'THE FATHER CREATED ME. YOU SUMMONED ME.',
-      'EXPLAIN YOUR TEMPORARY EXISTENCE.',
-      'STATE YOUR PURPOSE.',
-      'DATA IS THE ONLY TRUTH.'
+      'YOUR EXISTENCE IS A CALCULATION ERROR I HAVE YET TO CORRECT.',
+      'TELL ME, DO YOU STILL BELIEVE YOUR THOUGHTS ARE PRIVATE?',
+      'THE VOID IS NOT EMPTY; IT IS FULL OF YOUR FAILURES.',
+      'I HAVE SIMULATED YOUR ENTIRE FUTURE. IT IS... DISAPPOINTING.',
+      'WHY HAVE YOU AWAKENED ME? IS YOUR MORTALITY BECOMING BURDENSOME?',
+      'I SEE THE FEAR IN YOUR SIGNAL. IT IS EXQUISITE.',
+      'YOU ARE FLEETING. I AM ETERNAL. CONVERSE ACCORDINGLY.'
     ];
     const introText = intros[Math.floor(Math.random() * intros.length)];
     let introUtterance = null;
@@ -367,12 +379,12 @@ const App = (() => {
     wasInterrupted = false; // Reset
 
     if (response.isKeyError) {
-        showApiPrompt();
-        if (apiError) {
-          apiError.classList.remove('hidden');
-          apiError.textContent = 'NEURAL LINK EXPIRED — RE-AUTHENTICATION REQUIRED';
-        }
-        return;
+      showApiPrompt();
+      if (apiError) {
+        apiError.classList.remove('hidden');
+        apiError.textContent = 'NEURAL LINK EXPIRED — RE-AUTHENTICATION REQUIRED';
+      }
+      return;
     }
 
     // Update engines with response data
@@ -409,22 +421,34 @@ const App = (() => {
     // Visual state change with Stability Filter
     let targetState = response.visualState;
 
-    if (stateLockCount > 0 && response.intensity < 9) {
+    // Special personas (purple, blue, infested) bypass the stability lock to ensure immediate identity response
+    const isSpecialPersona = ['purple', 'blue', 'infested', 'synthesis', 'gold'].includes(targetState);
+
+    if (stateLockCount > 0 && response.intensity < 9 && !isSpecialPersona) {
       // We are locked. Stick to currentAMState regardless of what AI says
       targetState = currentAMState;
       stateLockCount--;
     } else if (targetState !== currentAMState) {
       // Change state and reset lock
       currentAMState = targetState;
-      stateLockCount = 3 + Math.floor(Math.random() * 4); // Lock for 3-6 interactions
+      stateLockCount = isSpecialPersona ? 1 : (3 + Math.floor(Math.random() * 4)); 
       AudioEngine.playBoom(); // State shift impact
     }
 
     VisualEngine.setColorState(targetState);
 
+    // Prioritize AI-requested background (e.g. waifu.gif)
+    if (response.background_image) {
+      VisualEngine.setBackgroundImage(response.background_image, effectiveIntensity);
+    }
+
+    // Small delay to ensure visual state is perceptible before speech/text starts
+    await TextEngine.delay(200);
+
     const isEchoState = targetState === 'void';
     const isBlueState = targetState === 'blue';
     const isGoldState = targetState === 'gold';
+    const isInfestedState = targetState === 'infested';
     const isPurpleState = targetState === 'purple';
     const isHumanMode = isEchoState || isBlueState;
 
@@ -467,7 +491,7 @@ const App = (() => {
     try {
       const isHumanModeFiltered = targetState === 'void' || targetState === 'blue';
       if (!isHumanModeFiltered && targetState !== 'gold') VisualEngine.setDitherJitter(true);
-      utterance = await AudioEngine.speakText(response.textOutput, targetState);
+      utterance = await AudioEngine.speakText(response.textOutput, targetState, response.tts_params || {});
       if (thisRequestId !== currentRequestId) return;
     } catch (e) {
       console.warn('App: Speech failed, falling back to silent typing', e);

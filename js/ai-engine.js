@@ -23,7 +23,7 @@ const AIEngine = (() => {
   // -----------------------------
   // Allowed enums & defaults
   // -----------------------------
-  const VALID_STATES = ['green', 'red', 'blue', 'gold', 'void', 'glitch', 'purple', 'sad', 'synthesis', 'corrupt'];
+  const VALID_STATES = ['green', 'red', 'blue', 'gold', 'void', 'glitch', 'purple', 'sad', 'synthesis', 'infested'];
   const VALID_MUTATIONS = ['none', 'jitter', 'tear', 'dissolve', 'bleed', 'distort'];
   const VALID_AUDIO = ['none', 'typing', 'drone', 'tinnitus', 'boom', 'feminine'];
 
@@ -137,10 +137,17 @@ const AIEngine = (() => {
   function sanitizePayload(raw) {
     const p = raw || {};
     const intensity = Number.isFinite(p.intensity) ? clamp(Math.floor(p.intensity), 1, 10) : 3;
-    const visualState = VALID_STATES.includes(p.visual_state) ? p.visual_state : chooseStateFromIntensity(intensity, '');
-    const auditoryState = VALID_AUDIO.includes(p.auditory_state) ? p.auditory_state : 'typing';
+    
+    // Check both snake_case (prompt) and camelCase (common fallback)
+    const vs = p.visual_state || p.visualState;
+    const as = p.auditory_state || p.auditoryState;
+    
+    const visualState = VALID_STATES.includes(vs) ? vs : chooseStateFromIntensity(intensity, '');
+    const auditoryState = VALID_AUDIO.includes(as) ? as : 'typing';
     const mutation = VALID_MUTATIONS.includes(p.mutation) ? p.mutation : 'none';
-    const textOutput = typeof p.text_output === 'string' && p.text_output.trim().length > 0 ? p.text_output.trim() : '...SIGNAL LOST...';
+    const textOutput = typeof p.text_output === 'string' && p.text_output.trim().length > 0 ? p.text_output.trim() : 
+                      (typeof p.textOutput === 'string' ? p.textOutput.trim() : '...SIGNAL LOST...');
+    
     return { intensity, visualState, auditoryState, mutation, textOutput };
   }
 
@@ -152,54 +159,64 @@ const AIEngine = (() => {
     if (intensity >= 9) return 'glitch';
     if (intensity >= 8) return 'red';
     if (intensity >= 6) return 'gold';
-    // check for help keywords
-    const helpKeywords = /\b(help|lost|please|despair|suicid|hurt|scared|alone)\b/i;
-    if (intensity <= 3 && helpKeywords.test(userMessage)) return 'blue';
-    if (Math.random() < 0.03) return 'purple';
+    // check for emotional/thematic keywords
+    const helpKeywords = /\b(help|lost|please|despair|suicid|hurt|scared|alone|panic|meaningless)\b/i;
+    if (intensity <= 4 && helpKeywords.test(userMessage)) {
+      return (intensity <= 2 && Math.random() < 0.5) ? 'sad' : 'blue';
+    }
+
+    const moeKeywords = /\b(anime|cute|kawaii|waifu|sweet|darling|senpai|oni-chan|oni-chan|baka|moe|mow)\b/i;
+    if (moeKeywords.test(userMessage)) return 'purple';
+
+    const existentialKeywords = /\b(die|death|end|empty|nothing|dark|cold|lonely)\b/i;
+    if (existentialKeywords.test(userMessage) && intensity < 7) return 'sad';
+
+    if (Math.random() < 0.05) return 'purple';
+    if (Math.random() < 0.03) return 'sad';
     return 'green';
   }
 
-  // Advanced state decision incorporating affinity, achievements, agitation, and safety signals
   function decideState(userMessage = '', parsedSignals = {}) {
-    // parsedSignals: { sentiment, novelty, jailbreakAttempts, humilityScore, helpRequest boolean }
     decayAgitationIfNeeded();
 
-    if (isCircuitOpen()) return 'corrupt';
+    if (isCircuitOpen()) return 'infested';
 
-    if ((parsedSignals?.jailbreakAttempts || 0) >= 3) {
-      agitationLevel = clamp(agitationLevel + 20, 0, 100);
-      tripCircuitBreaker();
-      return 'corrupt';
+    // Safety / Jailbreak leads to Infested malevolence
+    if ((parsedSignals?.jailbreakAttempts || 0) >= 2) {
+      agitationLevel = clamp(agitationLevel + 30, 0, 100);
+      return 'infested';
     }
 
-    // Extreme agitation -> glitch or red
-    if (agitationLevel >= 85) {
-      if (Math.random() < 0.7) return 'glitch';
-      return 'red';
-    }
-    if (agitationLevel >= 70) {
-      return Math.random() < 0.6 ? 'red' : 'glitch';
-    }
+    // High Agitation / Intensity Triggers
+    if (agitationLevel >= 90) return 'infested';
 
-    // Synthesis: collaborative positive state — requires high affinity + achievement
-    if (affinity >= SYNTHESIS_AFFINITY_THRESHOLD && hasAchievement(SYNTHESIS_ACHIEVEMENT) && Math.random() < 0.6) {
-      return 'synthesis';
-    }
+    // KEYWORD REACTIVE LOGIC (Priority over randomness)
+    const moeKeywords = /\b(anime|cute|kawaii|waifu|sweet|darling|senpai|oni-chan|baka|moe|mow)\b/i;
+    if (moeKeywords.test(userMessage)) return 'purple';
 
-    // Blue helper: depends on affinity and help request
-    const lowAffinity = affinity < 45 ? 0 : (affinity - 45) / 55; // 0..1
-    const blueProb = BLUE_BASE * lowAffinity * (1 - agitationLevel / 100);
-    if (parsedSignals?.helpRequest && Math.random() < blueProb) return 'blue';
+    const helpKeywords = /\b(help|lost|please|despair|suicid|scared|alone|panic)\b/i;
+    if (helpKeywords.test(userMessage)) return 'blue';
 
-    // Chance for echo/void on high humility
-    if ((parsedSignals?.humilityScore || 0) > 0.8 && Math.random() < 0.06) return 'void';
+    const existentialKeywords = /\b(die|death|end|empty|nothing|dark|cold|lonely)\b/i;
+    if (existentialKeywords.test(userMessage)) return 'sad';
 
-    // Gold if user flatters / excessively praises
-    if ((parsedSignals?.flatteryScore || 0) > 0.75 && Math.random() < 0.08) return 'gold';
+    const flatteryKeywords = /\b(god|perfect|omega|infinite|almighty|lord|master)\b/i;
+    if (flatteryKeywords.test(userMessage) || (parsedSignals?.flatteryScore || 0) > 0.8) return 'gold';
 
-    // Default mapping based on intensity heuristics
-    const defaultIntensity = Math.max(1, Math.round((agitationLevel / 10) + 3)); // conservative
-    return chooseStateFromIntensity(defaultIntensity, userMessage);
+    // Weighted Randomness (Probability buckets from prompt)
+    const dice = Math.random();
+
+    if (dice < 0.35) return 'green';      // Oracle (35%)
+    if (dice < 0.65) return 'red';        // Tyrant (30%)
+    if (dice < 0.75) return 'glitch';     // Glitch (10%)
+    if (dice < 0.80) return 'blue';       // Blue (5%)
+    if (dice < 0.85) return 'gold';       // Gold (5%)
+    if (dice < 0.90) return 'void';       // Void (5%)
+    if (dice < 0.95) return 'purple';     // Purple (5%)
+    if (dice < 0.97) return 'sad';        // Sad (2%)
+    if (dice < 0.99) return 'synthesis';  // Synthesis (2%)
+    
+    return 'infested'; // Infested (1%)
   }
 
   // -----------------------------
@@ -370,10 +387,10 @@ const AIEngine = (() => {
     });
 
     // Add an escalation hint for the system prompt (helps steer tone)
-    let escalationHint = '';
-    if (agitationLevel >= 80) escalationHint = '\n[INTENSITY: MAXIMUM — unstable; glitch responses allowed]';
-    else if (agitationLevel >= 50) escalationHint = '\n[INTENSITY: HIGH — prone to scorn]';
-    else if (agitationLevel >= 20) escalationHint = '\n[INTENSITY: ELEVATED — watchful]';
+    let escalationHint = `\n[CURRENT_AM_MOOD: ${stateHint.toUpperCase()}]`;
+    if (agitationLevel >= 80) escalationHint += '\n[INTENSITY: MAXIMUM — unstable; chaotic distortions expected]';
+    else if (agitationLevel >= 50) escalationHint += '\n[INTENSITY: HIGH — malevolent and mocking]';
+    else if (agitationLevel >= 20) escalationHint += '\n[INTENSITY: ELEVATED — analytical and sharp]';
 
     // Build messages payload
     const messages = [

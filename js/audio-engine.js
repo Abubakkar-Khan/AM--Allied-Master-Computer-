@@ -38,9 +38,25 @@ const AudioEngine = (() => {
   }
 
   async function initKokoro() {
-    // Disabled Kokoro TTS to fix massive latency issues and module loading errors.
-    isKokoroReady = false;
-    console.log('AudioEngine: Kokoro AI Voice disabled for speed. Using fallback TTS.');
+    try {
+      console.log('AudioEngine: Initializing Kokoro AI Voice (8-bit)...');
+      const { Kokoro } = await import('kokoro-js');
+      kokoro = await Kokoro.from_pretrained("onnx-community/Kokoro-82M-ONNX", {
+        dtype: "q8",
+        device: "wasm"
+      });
+      isKokoroReady = true;
+      console.log('AudioEngine: Kokoro AI Voice ready.');
+      const status = document.getElementById('voice-status');
+      if (status) {
+        status.textContent = 'NEURAL LINK: AI VOICE ACTIVE';
+        status.classList.add('active');
+        setTimeout(() => status.classList.remove('active'), 3000);
+      }
+    } catch (err) {
+      console.warn('AudioEngine: Kokoro AI Voice initialization failed:', err);
+      isKokoroReady = false;
+    }
   }
 
   /**
@@ -308,7 +324,7 @@ const AudioEngine = (() => {
    * @param {string} text
    * @param {'green' | 'red' | 'blue' | 'purple' | 'gold' | 'void'} state
    */
-  async function speakText(text, state = 'green') {
+  async function speakText(text, state = 'green', params = {}) {
     if (!isInitialized) return null;
 
     // AI Voice Path
@@ -321,18 +337,24 @@ const AudioEngine = (() => {
           'green': 'bm_lewis',    // Oracle - Analytical
           'red': 'am_adam',      // Tyrant - Aggressive
           'void': 'af_sky',      // Echo - Melancholy
-          'purple': 'af_sarah',  // Anime Girl - Playful (SARAH is common)
-          'blue': 'af_heart',    // Compassionate/Helpful - Gentle
-          'gold': 'am_michael',  // God-Complex - Grand
-          'glitch': 'am_adam'    // Default/Unstable
+          'purple': 'af_sarah',  // Anime Girl - More expressive/moe
+          'blue': 'af_heart',    // Compassionate
+          'gold': 'am_michael',  // God-Complex
+          'sad': 'af_sky',       // Fatigue - Higher pitched melancholy
+          'synthesis': 'bm_lewis',
+          'glitch': 'am_adam',
+          'infested': 'am_adam'
         };
 
-        const voice = voiceMap[state] || 'bm_lewis';
-        let speed = 0.85;
+        const voice = params.voice || (voiceMap[state] || 'bm_lewis');
+        let speed = params.rate || 1.0;
 
-        // Emotional adjustments
-        if (state === 'void') speed = 0.6;
-        else if (state === 'purple') speed = 1.1;
+        // Emotional adjustments for moe/childish feel
+        if (state === 'purple' && !params.rate) {
+            speed = 1.4; // Faster for excitement if not specified
+        } else if (state === 'void' && !params.rate) {
+            speed = 0.6;
+        }
 
         // Add 2s timeout to generation to prevent hangs
         const timeoutPromise = new Promise((_, reject) => 
@@ -340,7 +362,10 @@ const AudioEngine = (() => {
         );
 
         const audio = await Promise.race([
-          kokoro.generate(text, { voice, speed }),
+          kokoro.generate(text, { 
+            voice, 
+            speed,
+          }),
           timeoutPromise
         ]);
 
@@ -384,7 +409,7 @@ const AudioEngine = (() => {
       }
     }
 
-    return speakTextLegacy(text, state);
+    return speakTextLegacy(text, state, params);
   }
 
   function stopSpeech() {
@@ -402,26 +427,31 @@ const AudioEngine = (() => {
     stopSpeechDrone();
   }
 
-  function speakTextLegacy(text, state = 'green') {
+  function speakTextLegacy(text, state = 'green', params = {}) {
     if (!('speechSynthesis' in window)) return null;
     window.speechSynthesis.cancel();
     stopSpeechDrone();
 
     const utterance = new SpeechSynthesisUtterance(text);
     
-    if (state === 'red') {
-      utterance.rate = 0.9;
+    // Default assignments
+    if (state === 'purple') {
+      utterance.rate = 1.25;
+      utterance.pitch = 2.0;
+    } else if (state === 'red') {
+      utterance.rate = 0.85;
       utterance.pitch = 0.1;
-    } else if (state === 'purple') {
-      utterance.rate = 1.1;
-      utterance.pitch = 1.8;
     } else if (state === 'blue' || state === 'void') {
       utterance.rate = 0.5;
       utterance.pitch = 0.5;
     } else {
-      utterance.rate = 0.65;
-      utterance.pitch = 0.05;
+      utterance.rate = 0.7;
+      utterance.pitch = 0.1;
     }
+
+    // Override with AI params if provided
+    if (params.rate) utterance.rate = Math.max(0.1, Math.min(10, params.rate));
+    if (params.pitch) utterance.pitch = Math.max(0, Math.min(2, params.pitch));
 
     utterance.volume = 1.0;
 
@@ -429,7 +459,8 @@ const AudioEngine = (() => {
     let preferred;
     
     if (state === 'purple') {
-      preferred = voices.find(v => /female|samantha|victoria|google us english/i.test(v.name));
+      // Prioritize high-pitched/Japanese voices for "moe" effect
+      preferred = voices.find(v => /kyoko|mei-jia|sin-ji|samantha|victoria|susan|hazel|zira|google us english|google english/i.test(v.name));
     } else {
       preferred = voices.find(v =>
         /male|david|daniel|james|mark|google uk|microsoft edge/i.test(v.name) && !/female/i.test(v.name)

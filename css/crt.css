@@ -64,14 +64,14 @@ body::after {
 body { animation: crt-flicker 5s ease-in-out infinite; }
 @keyframes crt-flicker {
   0%  { filter: brightness(1); }
-  2%  { filter: brightness(0.93); }
-  4%  { filter: brightness(1.02); }
-  6%  { filter: brightness(0.98); }
+  2%  { filter: brightness(0.99); }
+  4%  { filter: brightness(1); }
+  6%  { filter: brightness(1); }
   8%  { filter: brightness(1); }
   72% { filter: brightness(1); }
-  74% { filter: brightness(0.88); }
-  76% { filter: brightness(1.05); }
-  78% { filter: brightness(0.95); }
+  74% { filter: brightness(0.995); }
+  76% { filter: brightness(1.005); }
+  78% { filter: brightness(1); }
   80% { filter: brightness(1); }
   100%{ filter: brightness(1); }
 }
@@ -85,7 +85,7 @@ body { animation: crt-flicker 5s ease-in-out infinite; }
   background: linear-gradient(
     to bottom,
     transparent,
-    rgba(240, 144, 58, 0.06),
+    rgba(240, 144, 58, 0.03),
     transparent
   );
   z-index: 955;
