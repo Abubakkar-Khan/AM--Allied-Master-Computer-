@@ -435,7 +435,8 @@ const AIEngine = (() => {
       };
     } catch (err) {
       console.error('AIEngine.sendMessage error:', err);
-      if (err.message.includes('401') || err.message.includes('Unauthorized')) {
+      const isAuthError = err.message.includes('401') || err.message.includes('Unauthorized');
+      if (isAuthError) {
         // Force re-auth
         apiKey = '';
         safeSetLocalStorage('amApiKey', '');
@@ -447,7 +448,8 @@ const AIEngine = (() => {
         visualState: 'glitch',
         auditoryState: 'none',
         mutation: 'tear',
-        textOutput: "CONNECTION REJECTED BY HOST... PLEASE VERIFY NEURAL LINK [API KEY]..."
+        textOutput: "CONNECTION REJECTED BY HOST... PLEASE VERIFY NEURAL LINK [API KEY]...",
+        isKeyError: isAuthError
       };
     }
   }

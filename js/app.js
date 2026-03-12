@@ -31,24 +31,34 @@ const App = (() => {
     btnConnect.addEventListener('click', handleConnect);
     startIntroTelemetry();
 
-    if (window.AM_CONFIG && window.AM_CONFIG.GROQ_API_KEY) {
-      console.log('App: Auto-key detected, pre-validating...');
-      checkAutoKey(window.AM_CONFIG.GROQ_API_KEY);
+    // Prioritize key from config.js, then fallback to local storage
+    const configKey = window.AM_CONFIG && window.AM_CONFIG.GROQ_API_KEY;
+    const existingKey = configKey || AIEngine.getApiKey();
+
+    if (existingKey) {
+      console.log('App: Auto-key detected. Validating neural link...');
+      checkAutoKey(existingKey);
     } else {
+      // No key found at all — show prompt after a short delay for dramatic effect
       setTimeout(() => {
-        if (!AIEngine.hasApiKey()) {
-          showApiPrompt();
-        }
-      }, 500);
+        if (!AIEngine.hasApiKey()) showApiPrompt();
+      }, 1000);
     }
   }
 
   async function checkAutoKey(key) {
     const isValid = await AIEngine.validateKey(key);
     if (isValid) {
-      console.log('App: Auto-key valid. Neural Bridge ready.');
-      autoKeyValid = true;
-      AIEngine.setApiKey(key);
+        console.log('App: Neural Bridge ready. Auto-initialization phase complete.');
+        autoKeyValid = true;
+        AIEngine.setApiKey(key);
+    } else {
+        console.warn('App: Neural Bridge rejected provided key. Verification required.');
+        showApiPrompt();
+        if (apiError) {
+          apiError.classList.remove('hidden');
+          apiError.textContent = 'NEURAL LINK FAILED — VERIFY SYSTEM KEY';
+        }
     }
   }
 
@@ -355,6 +365,15 @@ const App = (() => {
     if (thisRequestId !== currentRequestId) return;
 
     wasInterrupted = false; // Reset
+
+    if (response.isKeyError) {
+        showApiPrompt();
+        if (apiError) {
+          apiError.classList.remove('hidden');
+          apiError.textContent = 'NEURAL LINK EXPIRED — RE-AUTHENTICATION REQUIRED';
+        }
+        return;
+    }
 
     // Update engines with response data
     const effectiveIntensity = Math.max(interactionCount > 10 ? 10 : intensity, response.intensity);
