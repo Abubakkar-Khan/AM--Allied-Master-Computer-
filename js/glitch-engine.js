@@ -160,3 +160,5 @@ const GlitchEngine = (() => {
     getIntensity
   };
 })();
+
+window.GlitchEngine = GlitchEngine;

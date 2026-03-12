@@ -26,7 +26,7 @@ const AudioEngine = (() => {
     try {
       ctx = new (window.AudioContext || window.webkitAudioContext)();
       masterGain = ctx.createGain();
-      masterGain.gain.value = 0.6;
+      masterGain.gain.value = 0.3;
       masterGain.connect(ctx.destination);
       isInitialized = true;
       
@@ -38,30 +38,9 @@ const AudioEngine = (() => {
   }
 
   async function initKokoro() {
-    const statusEl = document.getElementById('voice-status');
-    if (statusEl) statusEl.classList.remove('hidden');
-
-    try {
-      // Dynamic import of the Kokoro library
-      const { KokoroTTS } = await import('kokoro-js');
-      
-      // Use the lightest version for browser speed (v1.0 is ~30MB)
-      kokoro = await KokoroTTS.from_pretrained("onnx-community/Kokoro-82M-v1.0-ONNX", {
-        dtype: "q8", // 8-bit quantization for performance
-        device: "wasm"
-      });
-      
-      isKokoroReady = true;
-      if (statusEl) {
-        statusEl.textContent = 'NEURAL LINK: SYNCHRONIZED';
-        setTimeout(() => statusEl.classList.add('hidden'), 2000);
-      }
-      console.log('AudioEngine: Kokoro AI Voice ready');
-    } catch (e) {
-      console.error('AudioEngine: Failed to load Kokoro TTS:', e);
-      if (statusEl) statusEl.textContent = 'NEURAL LINK: FALLBACK ACTIVE';
-      setTimeout(() => statusEl.classList.add('hidden'), 3000);
-    }
+    // Disabled Kokoro TTS to fix massive latency issues and module loading errors.
+    isKokoroReady = false;
+    console.log('AudioEngine: Kokoro AI Voice disabled for speed. Using fallback TTS.');
   }
 
   /**
@@ -121,7 +100,7 @@ const AudioEngine = (() => {
     modulator.start();
 
     // Fade in slowly
-    droneGain.gain.linearRampToValueAtTime(0.2, ctx.currentTime + 5);
+    droneGain.gain.linearRampToValueAtTime(0.08, ctx.currentTime + 5);
 
     // FM Drone 2 (Metallic Resonance)
     const mCarrier = ctx.createOscillator();
@@ -149,7 +128,7 @@ const AudioEngine = (() => {
     mGain.gain.value = 0;
     mCarrier.start();
     mModulator.start();
-    mGain.gain.linearRampToValueAtTime(0.04, ctx.currentTime + 8);
+    mGain.gain.linearRampToValueAtTime(0.02, ctx.currentTime + 8);
 
     // LFO on the metallic filter
     const lfo = ctx.createOscillator();
@@ -213,7 +192,7 @@ const AudioEngine = (() => {
     filter.frequency.value = 2500;
     filter.Q.value = 1.2;
 
-    const vol = 0.06 + (currentIntensity / 10) * 0.18;
+    const vol = 0.03 + (currentIntensity / 10) * 0.12;
     gain.gain.value = vol;
 
     source.connect(filter);
@@ -246,7 +225,7 @@ const AudioEngine = (() => {
     filter.type = 'highpass';
     filter.frequency.value = 800;
 
-    gain.gain.value = 0.03; // Keep it subtle
+    gain.gain.value = 0.015; // Keep it subtle
 
     osc1.connect(filter);
     osc2.connect(filter);
@@ -290,7 +269,7 @@ const AudioEngine = (() => {
     modulator.connect(modGain);
     modGain.connect(carrier.frequency);
 
-    gain.gain.value = 0.2;
+    gain.gain.value = 0.05;
 
     carrier.connect(crusher);
     crusher.connect(gain);
@@ -318,9 +297,9 @@ const AudioEngine = (() => {
     }
     
     if (masterGain && currentIntensity >= 9) {
-        masterGain.gain.linearRampToValueAtTime(0.8, ctx.currentTime + 0.5);
-    } else if (masterGain) {
         masterGain.gain.linearRampToValueAtTime(0.6, ctx.currentTime + 0.5);
+    } else if (masterGain) {
+        masterGain.gain.linearRampToValueAtTime(0.3, ctx.currentTime + 0.5);
     }
   }
 
@@ -355,10 +334,15 @@ const AudioEngine = (() => {
         if (state === 'void') speed = 0.6;
         else if (state === 'purple') speed = 1.1;
 
-        const audio = await kokoro.generate(text, {
-          voice: voice,
-          speed: speed
-        });
+        // Add 2s timeout to generation to prevent hangs
+        const timeoutPromise = new Promise((_, reject) => 
+          setTimeout(() => reject(new Error('Kokoro timeout')), 2500)
+        );
+
+        const audio = await Promise.race([
+          kokoro.generate(text, { voice, speed }),
+          timeoutPromise
+        ]);
 
         const buffer = ctx.createBuffer(1, audio.audio.length, audio.sampling_rate);
         buffer.getChannelData(0).set(audio.audio);
@@ -602,7 +586,7 @@ const AudioEngine = (() => {
     
     modulator.start();
     carrier.start();
-    disGain.gain.linearRampToValueAtTime(0.05, ctx.currentTime + 10);
+    disGain.gain.linearRampToValueAtTime(0.02, ctx.currentTime + 10);
 
     // 2. Constant Radio Static Hum (White Noise Bandpassed)
     const node = ctx.createBufferSource();
@@ -627,7 +611,7 @@ const AudioEngine = (() => {
     noiseGain.connect(masterGain);
 
     node.start();
-    noiseGain.gain.linearRampToValueAtTime(0.02, ctx.currentTime + 5);
+    noiseGain.gain.linearRampToValueAtTime(0.01, ctx.currentTime + 5);
 
     // 3. Low Machine Hum (Sine + Triangle)
     const machineHum = ctx.createOscillator();
@@ -638,7 +622,7 @@ const AudioEngine = (() => {
     machineHum.connect(humGain);
     humGain.connect(masterGain);
     machineHum.start();
-    humGain.gain.linearRampToValueAtTime(0.03, ctx.currentTime + 3);
+    humGain.gain.linearRampToValueAtTime(0.015, ctx.currentTime + 3);
   }
 
   function playBoom() {
@@ -683,4 +667,6 @@ const AudioEngine = (() => {
     startBackgroundHorror
   };
 })();
+
+window.AudioEngine = AudioEngine;
 

@@ -1,6 +1,5 @@
 // ai_engine.js — Production-ready AI engine for "AM" persona
 // Drop-in module. Replace SYSTEM_PROMPT placeholder with your finalized system prompt string.
-// Dependencies: none (browser JS). Designed for use with OpenRouter / Gemini compatible endpoints.
 import { SYSTEM_PROMPT } from "./systemPrompt.js";
 
 
@@ -8,8 +7,8 @@ const AIEngine = (() => {
   // -----------------------------
   // Configuration (tune these)
   // -----------------------------
-  const MODEL = 'google/gemini-2.0-flash-001';
-  const API_URL = 'https://openrouter.ai/api/v1/chat/completions';
+  const MODEL = 'llama-3.1-8b-instant';
+  const API_URL = 'https://api.groq.com/openai/v1/chat/completions';
   const REQUEST_TIMEOUT_MS = 15000;      // per-request timeout
   const MAX_RETRIES = 2;                 // retry attempts on network/5xx
   const AGITATION_DECAY_MS = 1000 * 60;  // agitation decays every minute
@@ -20,9 +19,6 @@ const AIEngine = (() => {
   const SYNTHESIS_ACHIEVEMENT = 'creative_spark';
   const CIRCUIT_BREAKER_FAILS = 6;       // consecutive failures before short-circuit
   const CIRCUIT_BREAKER_COOLDOWN_MS = 1000 * 60 * 2; // 2 minutes cooldown
-
-  // Paste your finalized system prompt here (VERY IMPORTANT)
-  // Keep JSON schema & state rules inside that prompt so model follows them.
 
   // -----------------------------
   // Allowed enums & defaults
@@ -220,8 +216,7 @@ const AIEngine = (() => {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
-            'Authorization': `Bearer ${getApiKey()}`,
-            'X-Title': 'Project AM'
+            'Authorization': `Bearer ${getApiKey()}`
           },
           signal: controller.signal,
           body: JSON.stringify(body)
@@ -233,6 +228,7 @@ const AIEngine = (() => {
         return json;
       } catch (err) {
         clearTimeout(timeoutId);
+        console.error(`AIEngine: Attempt ${attempt} failed:`, err);
         lastErr = err;
         attempt += 1;
         consecutiveFailures += 1;
@@ -267,21 +263,41 @@ const AIEngine = (() => {
   // -----------------------------
   async function validateKey(key) {
     if (!key) return false;
+
+    // Format check (optional but good for speed)
+    if (!key.startsWith('gsk_') && key.length < 40) {
+      console.warn('AIEngine: Invalid key format.');
+      return false;
+    }
+
+    // Fallback to network check
     try {
+      console.log('AIEngine: Attempting network validation for key...');
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 4000);
+      
       const res = await fetch(API_URL, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${key}`
         },
+        signal: controller.signal,
         body: JSON.stringify({
           model: MODEL,
-          messages: [{ role: 'system', content: 'PING' }, { role: 'user', content: 'say OK' }],
-          max_tokens: 8
+          messages: [{ role: 'user', content: 'respond with OK' }],
+          max_tokens: 5
         })
       });
+      clearTimeout(timeoutId);
+      console.log('AIEngine: Validation response status:', res.status);
       return res.ok;
-    } catch { return false; }
+    } catch (err) {
+      console.error('AIEngine: Validation error:', err);
+      // If it's a CORS error or network error, but the key looks plausible (long enough),
+      // we might want to let them through, but for now let's just return false.
+      return false;
+    }
   }
 
   // -----------------------------
@@ -315,7 +331,11 @@ const AIEngine = (() => {
   // userMessage: string
   // options: { interactionCount, interrupted, parsedSignals }
   async function sendMessage(userMessage = '', options = {}) {
-    if (!hasApiKey()) throw new Error('NO API KEY');
+    console.log('AIEngine: sendMessage called', { userMessage, options });
+    if (!hasApiKey()) {
+      console.error('AIEngine: No API key found');
+      throw new Error('NO API KEY');
+    }
 
     decayAgitationIfNeeded();
     const { interactionCount = 0, interrupted = false, parsedSignals = {} } = options;
@@ -367,12 +387,14 @@ const AIEngine = (() => {
       temperature: 0.8,
       top_p: 0.95,
       max_tokens: 512,
-      // If provider supports structured response enforcement, include it in request config
-      // e.g., response_format: { type: "json_object" } — but we don't rely on it.
+      // Groq supports JSON mode if specified
+      response_format: { type: "json_object" }
     };
 
     try {
+      console.log('AIEngine: Fetching from Groq...', body);
       const data = await safeFetchWithRetries(body);
+      console.log('AIEngine: Groq response data:', data);
 
       // Attempt to extract JSON payload from model output
       const rawText = String((data?.choices?.[0]?.message?.content) || (data?.choices?.[0]?.message?.text) || '').trim();
@@ -413,9 +435,20 @@ const AIEngine = (() => {
       };
     } catch (err) {
       console.error('AIEngine.sendMessage error:', err);
+      if (err.message.includes('401') || err.message.includes('Unauthorized')) {
+        // Force re-auth
+        apiKey = '';
+        safeSetLocalStorage('amApiKey', '');
+      }
       consecutiveFailures += 1;
       if (consecutiveFailures >= CIRCUIT_BREAKER_FAILS) tripCircuitBreaker();
-      return fallbackResponse(interactionCount);
+      return {
+        intensity: 3,
+        visualState: 'glitch',
+        auditoryState: 'none',
+        mutation: 'tear',
+        textOutput: "CONNECTION REJECTED BY HOST... PLEASE VERIFY NEURAL LINK [API KEY]..."
+      };
     }
   }
 
@@ -473,3 +506,7 @@ const AIEngine = (() => {
     extractJSON
   };
 })();
+
+// Expose to window for legacy inter-op
+window.AIEngine = AIEngine;
+export default AIEngine;

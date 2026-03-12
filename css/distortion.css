@@ -4,7 +4,7 @@
 
 /* --- Screen Shake --- */
 .distortion-shake {
-  animation: screen-shake 0.1s steps(5) infinite !important;
+  animation: screen-shake 0.3s steps(5) infinite !important;
 }
 
 @keyframes screen-shake {
@@ -17,7 +17,7 @@
 }
 
 .distortion-shake-heavy {
-  animation: screen-shake-heavy 0.06s steps(6) infinite !important;
+  animation: screen-shake-heavy 0.2s steps(6) infinite !important;
 }
 
 @keyframes screen-shake-heavy {
@@ -125,7 +125,7 @@
 
 @keyframes power-surge {
   0% { filter: brightness(1); }
-  30% { filter: brightness(3); }
-  60% { filter: brightness(0.5); }
+  30% { filter: brightness(1.8); }
+  60% { filter: brightness(0.8); }
   100% { filter: brightness(1); }
 }

@@ -745,3 +745,5 @@ const VisualEngine = (() => {
     updateBackground
   };
 })();
+
+window.VisualEngine = VisualEngine;

@@ -250,3 +250,5 @@ const CorruptionEngine = (() => {
     getInteractionCount
   };
 })();
+
+window.CorruptionEngine = CorruptionEngine;

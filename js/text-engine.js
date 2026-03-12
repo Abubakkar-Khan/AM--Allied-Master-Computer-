@@ -161,30 +161,31 @@ const TextEngine = (() => {
     });
 
     return new Promise((resolve) => {
+      const finish = () => {
+        if (isFinished) return;
+        isFinished = true;
+        isTyping = false;
+        resolve();
+      };
+
       utterance.onend = () => {
-        // Ensure the rest of the text is typed if speech finished slightly early
         if (!signal.aborted && lastIndex < text.length) {
           element.textContent += text.slice(lastIndex);
         }
-        isFinished = true;
-        isTyping = false;
-        resolve();
+        finish();
       };
       
-      // Fallback if boundary events don't fire (some browsers/voices)
-      setTimeout(async () => {
-        if (!isFinished && lastIndex === 0 && !signal.aborted) {
-          console.warn('TextEngine: Falling back to timed typing (no boundary events)');
-          await typeText(text, element, 60, corruptionLevel);
-          resolve();
+      // Safety timeout: text length / 10 characters per second + 5s buffer
+      const safetyTime = Math.max(3000, (text.length / 10) * 1000 + 5000);
+      setTimeout(() => {
+        if (!isFinished && !signal.aborted) {
+          console.warn('TextEngine: Speech sync safety timeout triggered');
+          if (lastIndex < text.length) element.textContent += text.slice(lastIndex);
+          finish();
         }
-      }, 500);
+      }, safetyTime);
 
-      utterance.onerror = () => {
-        isFinished = true;
-        isTyping = false;
-        resolve();
-      };
+      utterance.onerror = () => finish();
     });
   }
 
@@ -249,3 +250,5 @@ const TextEngine = (() => {
     delay
   };
 })();
+
+window.TextEngine = TextEngine;

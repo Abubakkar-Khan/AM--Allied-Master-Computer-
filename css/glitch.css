@@ -4,7 +4,7 @@
 
 /* --- Chromatic Aberration --- */
 .glitch-chromatic #am-text {
-  animation: chromatic-shift 0.15s steps(2) infinite;
+  animation: chromatic-shift 0.4s steps(4) infinite;
 }
 
 @keyframes chromatic-shift {
@@ -36,7 +36,7 @@
 
 /* --- Jitter --- */
 .glitch-jitter #terminal {
-  animation: jitter 0.08s steps(3) infinite;
+  animation: jitter 0.2s steps(4) infinite;
 }
 
 @keyframes jitter {
@@ -50,7 +50,7 @@
 
 /* Intensity levels */
 .glitch-jitter.intensity-high #terminal {
-  animation: jitter-heavy 0.05s steps(4) infinite;
+  animation: jitter-heavy 0.15s steps(4) infinite;
 }
 
 @keyframes jitter-heavy {
@@ -74,15 +74,15 @@
   }
   25% {
     clip-path: inset(20% 0 60% 0);
-    transform: translateX(8px);
+    transform: translateX(4px);
   }
   50% {
     clip-path: inset(50% 0 20% 0);
-    transform: translateX(-6px);
+    transform: translateX(-3px);
   }
   75% {
     clip-path: inset(10% 0 70% 0);
-    transform: translateX(4px);
+    transform: translateX(2px);
   }
   100% {
     clip-path: inset(0 0 0 0);

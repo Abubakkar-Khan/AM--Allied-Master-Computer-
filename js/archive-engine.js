@@ -58,3 +58,5 @@ const ArchiveEngine = (() => {
     search
   };
 })();
+
+window.ArchiveEngine = ArchiveEngine;

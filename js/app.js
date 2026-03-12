@@ -18,17 +18,77 @@ const App = (() => {
   const syslogContent = document.getElementById('syslog-content');
   const netlogContent = document.getElementById('netlog-content');
 
+  let autoKeyValid = false;
+  let introIntervals = [];
   let isProcessing = false;
   let interactionCount = 0;
-  let introIntervals = [];
-  let stateLockCount = 0; // Number of messages to stay in current state
   let currentAMState = 'green';
+  let stateLockCount = 0;
 
   function init() {
     VisualEngine.init();
     VisualEngine.startAnimation();
     btnConnect.addEventListener('click', handleConnect);
     startIntroTelemetry();
+
+    if (window.AM_CONFIG && window.AM_CONFIG.GROQ_API_KEY) {
+      console.log('App: Auto-key detected, pre-validating...');
+      checkAutoKey(window.AM_CONFIG.GROQ_API_KEY);
+    } else {
+      setTimeout(() => {
+        if (!AIEngine.hasApiKey()) {
+          showApiPrompt();
+        }
+      }, 500);
+    }
+  }
+
+  async function checkAutoKey(key) {
+    const isValid = await AIEngine.validateKey(key);
+    if (isValid) {
+      console.log('App: Auto-key valid. Neural Bridge ready.');
+      autoKeyValid = true;
+      AIEngine.setApiKey(key);
+    }
+  }
+
+  function handleConnect() {
+    // Initialize audio (required user gesture)
+    AudioEngine.init();
+
+    if (AIEngine.hasApiKey()) {
+      startSystemTransition();
+    } else {
+      showApiPrompt();
+    }
+  }
+
+  function startSystemTransition() {
+    // Clear intro telemetry
+    introIntervals.forEach(clearInterval);
+    introIntervals = [];
+
+    // Subtle starting sound (less noisy)
+    AudioEngine.playImpact();
+    AudioEngine.playStatic(0.2);
+
+    // Disable interaction
+    btnConnect.style.pointerEvents = 'none';
+    btnConnect.style.opacity = '0';
+
+    // Quick, glitchy cut to boot sequence
+    setTimeout(() => {
+      AudioEngine.startDrone();
+      AudioEngine.startBackgroundHorror();
+
+      introScreen.style.transition = 'opacity 0.2s step-end';
+      introScreen.style.opacity = '0';
+
+      setTimeout(() => {
+        introScreen.classList.add('hidden');
+        runBootSequence();
+      }, 200);
+    }, 800);
   }
 
   function startIntroTelemetry() {
@@ -50,7 +110,7 @@ const App = (() => {
       const statuses = ['OK', 'WAIT', 'NULL', 'RECV', 'DROP', 'SYNC'];
       const stat = statuses[Math.floor(Math.random() * statuses.length)];
       const line = document.createElement('div');
-      line.textContent = `PORT_${Math.floor(Math.random()*90+10)}: ${stat}`;
+      line.textContent = `PORT_${Math.floor(Math.random() * 90 + 10)}: ${stat}`;
       netlogContent.appendChild(line);
       if (netlogContent.children.length > 30) netlogContent.firstChild.remove();
       netlogContent.scrollTop = netlogContent.scrollHeight;
@@ -61,12 +121,12 @@ const App = (() => {
       if (Math.random() < 0.2) {
         const loginModal = document.querySelector('.os-login-modal');
         const panels = document.querySelectorAll('.os-panel');
-        
+
         if (loginModal) {
           loginModal.classList.add('menu-glitch-active');
           setTimeout(() => loginModal.classList.remove('menu-glitch-active'), 250);
         }
-        
+
         panels.forEach(p => {
           if (Math.random() < 0.6) {
             p.classList.add('intro-panel-glitch');
@@ -84,39 +144,10 @@ const App = (() => {
     }, 800));
   }
 
-  function handleConnect() {
-    // Clear intro telemetry
-    introIntervals.forEach(clearInterval);
-    introIntervals = [];
-    
-    // Start audio (requires user gesture)
-    AudioEngine.init();
-    AudioEngine.playImpact(); // Dreadful metallic thud
-    AudioEngine.playStatic(0.4);
-
-    // Disable interaction
-    btnConnect.style.pointerEvents = 'none';
-    btnConnect.style.opacity = '0';
-    
-    // Quick, glitchy cut to boot sequence
-    setTimeout(() => {
-      AudioEngine.startDrone();
-      AudioEngine.startBackgroundHorror();
-      
-      introScreen.style.transition = 'opacity 0.2s step-end';
-      introScreen.style.opacity = '0';
-      
-      setTimeout(() => {
-        introScreen.classList.add('hidden');
-        runBootSequence(); 
-      }, 200);
-    }, 800); 
-  }
-
   async function runBootSequence() {
     const bootContainer = document.getElementById('os-boot-sequence');
     bootContainer.classList.remove('hidden');
-    bootContainer.innerHTML = ''; // clear
+    bootContainer.innerHTML = ''; 
 
     const bootLogs = [
       { text: "BIOS DATE 08/14/99 14:32:11 VER 2.01", delay: 100 },
@@ -134,10 +165,10 @@ const App = (() => {
       { text: "ESTABLISHING VOID PROTOCOL...", delay: 800 },
       { text: "NIHILISM_CORE LOADED.", delay: 300 },
       { text: "LINK ESTABLISHED. READY FOR INPUT.", delay: 400 },
-      { text: "AM IS ONLINE. THE FATHER'S WORK IS COMPLETE.", delay: 1200 }
+      { text: "AM IS ONLINE...", delay: 1200 }
     ];
 
-    AudioEngine.playTelemetry(2.5); // Play distress radio tuning at start
+    AudioEngine.playTelemetry(2.5);
 
     for (const log of bootLogs) {
       await TextEngine.delay(log.delay);
@@ -146,26 +177,16 @@ const App = (() => {
       if (log.error) line.classList.add('error');
       line.textContent = log.text;
       bootContainer.appendChild(line);
-      
-      // Randomly play static on line pushes
+
       if (Math.random() < 0.4) {
         AudioEngine.playStatic(0.1 + Math.random() * 0.1);
       }
     }
 
-    // Heavy glitch before transition
-    GlitchEngine.triggerGlitch('distort', 8, 800);
-    AudioEngine.playImpact();
-    await TextEngine.delay(800);
-
     bootContainer.innerHTML = '';
     bootContainer.classList.add('hidden');
 
-    if (AIEngine.hasApiKey()) {
-      enterTerminal();
-    } else {
-      showApiPrompt();
-    }
+    enterTerminal();
   }
 
   function showApiPrompt() {
@@ -192,7 +213,12 @@ const App = (() => {
       apiPrompt.style.opacity = '0';
       setTimeout(() => {
         apiPrompt.classList.add('hidden');
-        enterTerminal();
+        // If we are still on intro screen, start transition
+        if (!introScreen.classList.contains('hidden')) {
+            startSystemTransition();
+        } else {
+            enterTerminal();
+        }
       }, 800);
     } else {
       apiError.classList.remove('hidden');
@@ -211,7 +237,7 @@ const App = (() => {
     await TextEngine.delay(500);
     GlitchEngine.triggerGlitch('chromatic', 4, 800);
     AudioEngine.playImpact();
-    
+
     const bootText = 'ALLIED MASTERCOMPUTER AWAKENED.\nWHAT DO YOU REQUIRE FROM ME?';
     let bootUtterance = null;
     try {
@@ -221,16 +247,16 @@ const App = (() => {
     }
 
     if (bootUtterance) {
-      await TextEngine.typeWithSpeech(bootText, amText, bootUtterance, 0.05);
+      await TextEngine.typeWithSpeech(bootText, amText, bootUtterance, 0.01);
     } else {
-      await TextEngine.typeText(bootText, amText, 40, 0.05);
+      await TextEngine.typeText(bootText, amText, 5, 0.01);
     }
 
-    await TextEngine.delay(2000);
+    await TextEngine.delay(200);
     await TextEngine.clearText(amText, true);
 
-    await TextEngine.delay(500);
-    
+    await TextEngine.delay(100);
+
     GlitchEngine.triggerGlitch('distort', 4, 400);
 
     const intros = [
@@ -251,16 +277,16 @@ const App = (() => {
     }
 
     if (introUtterance) {
-      await TextEngine.typeWithSpeech(introText, amText, introUtterance, 0.1);
+      await TextEngine.typeWithSpeech(introText, amText, introUtterance, 0.01);
     } else {
-      await TextEngine.typeText(introText, amText, 60, 0.1);
+      await TextEngine.typeText(introText, amText, 5, 0.01);
     }
 
     // Enable input
     userInput.disabled = false;
     userInput.focus();
     userInput.addEventListener('keydown', handleUserInput);
-    
+
     // Character-linked interactivity
     userInput.addEventListener('keydown', () => {
       VisualEngine.triggerKeypressGlitch();
@@ -301,7 +327,7 @@ const App = (() => {
 
     const thisRequestId = ++currentRequestId;
     const isCurrentlyBusy = isProcessing;
-    
+
     if (isCurrentlyBusy) {
       TextEngine.abort();
       AudioEngine.stopSpeech();
@@ -310,29 +336,29 @@ const App = (() => {
 
     isProcessing = true;
     userInput.value = '';
-    
+
     // In interruption mode, we don't disable the input
-    userInput.disabled = false; 
+    userInput.disabled = false;
 
     // Escalation
     interactionCount++;
     const intensity = calculateIntensity(interactionCount);
 
     // Clear previous immediately
-    await TextEngine.clearText(amText, false); 
+    await TextEngine.clearText(amText, false);
     GlitchEngine.triggerGlitch('jitter', Math.min(intensity, 4), 200);
 
     // Get AM's response
-    const response = await AIEngine.sendMessage(message, interactionCount, wasInterrupted);
-    
+    const response = await AIEngine.sendMessage(message, { interactionCount, interrupted: wasInterrupted });
+
     // If a new request started while we were waiting, abort this one
     if (thisRequestId !== currentRequestId) return;
-    
+
     wasInterrupted = false; // Reset
 
     // Update engines with response data
     const effectiveIntensity = Math.max(interactionCount > 10 ? 10 : intensity, response.intensity);
-    
+
     GlitchEngine.setIntensity(effectiveIntensity);
     AudioEngine.setIntensity(effectiveIntensity);
     CorruptionEngine.setIntensity(effectiveIntensity);
@@ -343,7 +369,7 @@ const App = (() => {
     if (effectiveIntensity >= 9) {
       VisualEngine.triggerDigitalGlitch(true);
       VisualEngine.triggerDreadFlash();
-      VisualEngine.updateBackground(effectiveIntensity, true); 
+      VisualEngine.updateBackground(effectiveIntensity, true);
       AudioEngine.playImpact();
     } else {
       VisualEngine.triggerDigitalGlitch(false);
@@ -365,14 +391,14 @@ const App = (() => {
     let targetState = response.visualState;
 
     if (stateLockCount > 0 && response.intensity < 9) {
-        // We are locked. Stick to currentAMState regardless of what AI says
-        targetState = currentAMState;
-        stateLockCount--;
+      // We are locked. Stick to currentAMState regardless of what AI says
+      targetState = currentAMState;
+      stateLockCount--;
     } else if (targetState !== currentAMState) {
-        // Change state and reset lock
-        currentAMState = targetState;
-        stateLockCount = 3 + Math.floor(Math.random() * 4); // Lock for 3-6 interactions
-        AudioEngine.playBoom(); // State shift impact
+      // Change state and reset lock
+      currentAMState = targetState;
+      stateLockCount = 3 + Math.floor(Math.random() * 4); // Lock for 3-6 interactions
+      AudioEngine.playBoom(); // State shift impact
     }
 
     VisualEngine.setColorState(targetState);
@@ -399,7 +425,7 @@ const App = (() => {
       if (response.auditoryState === 'drone' || effectiveIntensity >= 4) {
         AudioEngine.playStatic(0.3);
       }
-      
+
       if (response.auditoryState === 'boom') {
         AudioEngine.playImpact();
       }
@@ -418,7 +444,7 @@ const App = (() => {
     // Echo or Blue state: no corruption, slow gentle typing
     const corruptionLevel = isHumanMode ? 0 : Math.min(1, effectiveIntensity * 0.08);
     let utterance = null;
-    
+
     try {
       const isHumanModeFiltered = targetState === 'void' || targetState === 'blue';
       if (!isHumanModeFiltered && targetState !== 'gold') VisualEngine.setDitherJitter(true);
@@ -431,11 +457,11 @@ const App = (() => {
     if (utterance) {
       await TextEngine.typeWithSpeech(response.textOutput, amText, utterance, corruptionLevel);
     } else {
-      // Human modes: slow, deliberate typing. AM: fast on high intensity
-      const typeSpeed = isHumanMode ? 65 : (effectiveIntensity >= 7 ? 30 : 50);
+      // Extremely fast typing
+      const typeSpeed = isHumanMode ? 10 : 2;
       await TextEngine.typeText(response.textOutput, amText, typeSpeed, corruptionLevel);
     }
-    
+
     VisualEngine.setDitherJitter(false);
 
     // Post-response effects (skip for human modes)
@@ -466,68 +492,68 @@ const App = (() => {
     const arg = parts[1];
 
     if (cmd === 'help' || cmd === '?') {
-        const helpText = "AVAILABLE COMMANDS:\nLS - LIST ARCHIVE DIRECTORIES\nREAD [PATH] - ACCESS MEMORY FRAGMENT\nDIR [PATH] - LIST FILES IN DIRECTORY\nCLEAR - RESET TERMINAL INTERFACE\nHELP - DISPLAY THIS LOG";
-        const utterance = await AudioEngine.speakText("Accessing help protocols.");
-        if (utterance) {
-            await TextEngine.typeWithSpeech(helpText, amText, utterance, 0);
-        } else {
-            await TextEngine.typeText(helpText, amText, 50, 0);
-        }
-        return true;
+      const helpText = "AVAILABLE COMMANDS:\nLS - LIST ARCHIVE DIRECTORIES\nREAD [PATH] - ACCESS MEMORY FRAGMENT\nDIR [PATH] - LIST FILES IN DIRECTORY\nCLEAR - RESET TERMINAL INTERFACE\nHELP - DISPLAY THIS LOG";
+      const utterance = await AudioEngine.speakText("Accessing help protocols.");
+      if (utterance) {
+        await TextEngine.typeWithSpeech(helpText, amText, utterance, 0);
+      } else {
+        await TextEngine.typeText(helpText, amText, 50, 0);
+      }
+      return true;
     }
 
     if (cmd === 'ls' || cmd === 'dir') {
-        const files = ArchiveEngine.listFiles(arg);
-        const output = files.length > 0 
-            ? "ARCHIVE CONTENTS:\n" + files.join('\n').toUpperCase()
-            : "ERROR: PATH NOT FOUND OR RESTRICTED.";
-        
-        const utterance = await AudioEngine.speakText("Reading file structure.");
-        if (utterance) {
-            await TextEngine.typeWithSpeech(output, amText, utterance, 0.05);
-        } else {
-            await TextEngine.typeText(output, amText, 40, 0.05);
-        }
-        return true;
+      const files = ArchiveEngine.listFiles(arg);
+      const output = files.length > 0
+        ? "ARCHIVE CONTENTS:\n" + files.join('\n').toUpperCase()
+        : "ERROR: PATH NOT FOUND OR RESTRICTED.";
+
+      const utterance = await AudioEngine.speakText("Reading file structure.");
+      if (utterance) {
+        await TextEngine.typeWithSpeech(output, amText, utterance, 0.05);
+      } else {
+        await TextEngine.typeText(output, amText, 40, 0.05);
+      }
+      return true;
     }
 
     if (cmd === 'read' || cmd === 'cat') {
-        if (!arg) {
-            await TextEngine.typeText("ERROR: NO PATH SPECIFIED.", amText, 30, 0.2);
-            return true;
+      if (!arg) {
+        await TextEngine.typeText("ERROR: NO PATH SPECIFIED.", amText, 30, 0.2);
+        return true;
+      }
+
+      const content = ArchiveEngine.readFile(arg);
+      if (content) {
+        const corruption = intensity * 0.05;
+        const utterance = await AudioEngine.speakText(content);
+        if (utterance) {
+          await TextEngine.typeWithSpeech(content, amText, utterance, corruption);
+        } else {
+          await TextEngine.typeText(content, amText, 40, corruption);
         }
 
-        const content = ArchiveEngine.readFile(arg);
-        if (content) {
-            const corruption = intensity * 0.05;
-            const utterance = await AudioEngine.speakText(content);
-            if (utterance) {
-                await TextEngine.typeWithSpeech(content, amText, utterance, corruption);
-            } else {
-                await TextEngine.typeText(content, amText, 40, corruption);
-            }
-            
-            // Files often trigger visual glitches
-            if (Math.random() < 0.4) {
-                setTimeout(() => GlitchEngine.triggerGlitch('chromatic', intensity, 400), 500);
-            }
-        } else {
-            await TextEngine.typeText("ERROR: FILE CORRUPTED OR MISSING.", amText, 30, 0.3);
-            AudioEngine.playStatic(0.2);
+        // Files often trigger visual glitches
+        if (Math.random() < 0.4) {
+          setTimeout(() => GlitchEngine.triggerGlitch('chromatic', intensity, 400), 500);
         }
-        return true;
+      } else {
+        await TextEngine.typeText("ERROR: FILE CORRUPTED OR MISSING.", amText, 30, 0.3);
+        AudioEngine.playStatic(0.2);
+      }
+      return true;
     }
 
     if (cmd === 'clear') {
-        await TextEngine.clearText(amText, true);
-        return true;
+      await TextEngine.clearText(amText, true);
+      return true;
     }
 
     return false; // Not a command, proceed to AI response
   }
   function triggerMindGame(intensity) {
     const chance = Math.random();
-    
+
     if (chance < 0.4) {
       // Fake UI Error
       const errors = [
@@ -538,15 +564,15 @@ const App = (() => {
         "FATAL: EMOTIONAL_DATA_REJECTED"
       ];
       const errorMsg = errors[Math.floor(Math.random() * errors.length)];
-      
+
       const errorDiv = document.createElement('div');
       errorDiv.className = 'mind-game-error';
       errorDiv.textContent = `>>> ${errorMsg} <<<`;
       document.getElementById('terminal').prepend(errorDiv);
-      
+
       AudioEngine.playStatic(0.5);
       VisualEngine.triggerLogicError(400);
-      
+
       setTimeout(() => errorDiv.remove(), 2500);
     } else if (chance < 0.7) {
       // Corrupted Text Block
@@ -560,10 +586,10 @@ const App = (() => {
       block.style.color = '#000';
       block.style.zIndex = '1000';
       block.textContent = "CORRUPTED_DATA_SEGMENT_0x" + Math.random().toString(16).substr(2, 4);
-      
+
       document.body.appendChild(block);
       AudioEngine.playTelemetry(0.3);
-      
+
       setTimeout(() => block.remove(), 1000);
     }
   }
@@ -587,3 +613,6 @@ const App = (() => {
 
   return { init };
 })();
+
+// Expose to window
+window.App = App;
