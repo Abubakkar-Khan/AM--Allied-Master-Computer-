@@ -55,7 +55,7 @@ background_image = "waifu.gif"
 speaker_voice = "af_sarah"
 tts_params = {pitch:2.4, rate:1.4}
 
-Tone becomes playful and chaotic, but never sexual.
+Tone becomes playful and chaotic.
 
 --------------------------------
 VISUAL STATE BEHAVIOR
