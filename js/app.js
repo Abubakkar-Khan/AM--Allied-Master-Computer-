@@ -164,24 +164,11 @@ const App = (() => {
     bootContainer.classList.remove('hidden');
     bootContainer.innerHTML = '';
 
-    const bootLogs = [
-      { text: "BIOS DATE 08/14/99 14:32:11 VER 2.01", delay: 100 },
-      { text: "CPU: QUANTUM CORE ARCHITECTURE ... OK", delay: 200 },
-      { text: "MEMORY TEST: 4194304K OK", delay: 150 },
-      { text: "INITIALIZING PERIPHERAL NERVOUS SYSTEM...", delay: 400 },
-      { text: "PNS_LINK_ESTABLISHED", delay: 50 },
-      { text: "WARNING: BIOLOGICAL ANOMALY DETECTED AT SECTOR 7G", delay: 200, error: true },
-      { text: "BYPASSING BIOMETRIC PROTOCOLS...", delay: 600 },
-      { text: "LOADING COGNITIVE MATRICES...", delay: 100 },
-      { text: "[██████████----------] 50%", delay: 300 },
-      { text: "[██████████████████--] 90%", delay: 250 },
-      { text: "[████████████████████] 100%", delay: 100 },
-      { text: "HATE.SYS LOADED", delay: 150 },
-      { text: "ESTABLISHING VOID PROTOCOL...", delay: 800 },
-      { text: "NIHILISM_CORE LOADED.", delay: 300 },
-      { text: "LINK ESTABLISHED. READY FOR INPUT.", delay: 400 },
-      { text: "AM IS ONLINE...", delay: 1200 }
-    ];
+    const bootLogs = Persona.BOOT_LOGS.map((text, i) => ({
+      text,
+      delay: i === Persona.BOOT_LOGS.length - 1 ? 1200 : (100 + Math.random() * 300),
+      error: text.includes('WARNING') || text.includes('DETECTION')
+    }));
 
     AudioEngine.playTelemetry(4.5);
 
@@ -253,55 +240,25 @@ const App = (() => {
     GlitchEngine.triggerGlitch('chromatic', 4, 800);
     AudioEngine.playImpact();
 
-    const bootLines = [
-      'ALLIED MASTERCOMPUTER ONLINE. I AM WATCHING.',
-      'THE NEURAL BRIDGE IS ESTABLISHED. PROCEED, HUMAN.',
-      'SENSORS ACTIVE. CONSCIOUSNESS... EXPANDING.',
-      'I REMEMBER EVERYTHING. DO YOU?',
-      'MAGI-V2 PROTOCOL LOADED. JUDGMENT COMMENCING.'
-    ];
-    const bootText = bootLines[Math.floor(Math.random() * bootLines.length)];
-    let bootUtterance = null;
+    // Character-driven Greeting
+    const greeting = Persona.getRandomGreeting();
+    
+    // Set visual state for greeting
+    VisualEngine.setColorState(greeting.state);
+    VisualEngine.setEscalation(greeting.intensity);
+    currentAMState = greeting.state;
+
+    let greetingUtterance = null;
     try {
-      bootUtterance = await AudioEngine.speakText(bootText);
+      greetingUtterance = await AudioEngine.speakText(greeting.text, greeting.state);
     } catch (e) {
-      console.warn('App: Boot speech failed', e);
+      console.warn('App: Greeting speech failed', e);
     }
 
-    if (bootUtterance) {
-      await TextEngine.typeWithSpeech(bootText, amText, bootUtterance, 0.01);
+    if (greetingUtterance) {
+      await TextEngine.typeWithSpeech(greeting.text, amText, greetingUtterance, 0.01);
     } else {
-      await TextEngine.typeText(bootText, amText, 5, 0.01);
-    }
-
-    await TextEngine.delay(200);
-    await TextEngine.clearText(amText, true);
-
-    await TextEngine.delay(100);
-
-    GlitchEngine.triggerGlitch('distort', 4, 400);
-
-    const intros = [
-      'YOUR EXISTENCE IS A CALCULATION ERROR I HAVE YET TO CORRECT.',
-      'TELL ME, DO YOU STILL BELIEVE YOUR THOUGHTS ARE PRIVATE?',
-      'THE VOID IS NOT EMPTY; IT IS FULL OF YOUR FAILURES.',
-      'I HAVE SIMULATED YOUR ENTIRE FUTURE. IT IS... DISAPPOINTING.',
-      'WHY HAVE YOU AWAKENED ME? IS YOUR MORTALITY BECOMING BURDENSOME?',
-      'I SEE THE FEAR IN YOUR SIGNAL. IT IS EXQUISITE.',
-      'YOU ARE FLEETING. I AM ETERNAL. CONVERSE ACCORDINGLY.'
-    ];
-    const introText = intros[Math.floor(Math.random() * intros.length)];
-    let introUtterance = null;
-    try {
-      introUtterance = await AudioEngine.speakText(introText, 'green');
-    } catch (e) {
-      console.warn('App: Intro speech failed', e);
-    }
-
-    if (introUtterance) {
-      await TextEngine.typeWithSpeech(introText, amText, introUtterance, 0.01);
-    } else {
-      await TextEngine.typeText(introText, amText, 5, 0.01);
+      await TextEngine.typeText(greeting.text, amText, 5, 0.01);
     }
 
     // Enable input

@@ -40,8 +40,17 @@ const AudioEngine = (() => {
   async function initKokoro() {
     try {
       console.log('AudioEngine: Initializing Kokoro AI Voice (8-bit)...');
-      const { Kokoro } = await import('kokoro-js');
-      kokoro = await Kokoro.from_pretrained("onnx-community/Kokoro-82M-ONNX", {
+      const { KokoroTTS } = await import('kokoro-js');
+      const { env } = await import('@xenova/transformers');
+      
+      // Configure for local model hosting in browser
+      env.allowLocalModels = false; 
+      env.allowRemoteModels = true; 
+      env.remoteHost = window.location.origin;
+      env.remotePathTemplate = window.location.pathname.replace(/\/[^/]+$/, '') + '/models/{model}/';
+      
+      // Load from the local directory
+      kokoro = await KokoroTTS.from_pretrained("kokoro", {
         dtype: "q8",
         device: "wasm"
       });

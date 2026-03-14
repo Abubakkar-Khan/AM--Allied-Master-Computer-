@@ -137,17 +137,18 @@ const AIEngine = (() => {
   function sanitizePayload(raw) {
     const p = raw || {};
     const intensity = Number.isFinite(p.intensity) ? clamp(Math.floor(p.intensity), 1, 10) : 3;
-    
+
     // Check both snake_case (prompt) and camelCase (common fallback)
     const vs = p.visual_state || p.visualState;
     const as = p.auditory_state || p.auditoryState;
-    
+
     const visualState = VALID_STATES.includes(vs) ? vs : chooseStateFromIntensity(intensity, '');
     const auditoryState = VALID_AUDIO.includes(as) ? as : 'typing';
+
     const mutation = VALID_MUTATIONS.includes(p.mutation) ? p.mutation : 'none';
-    const textOutput = typeof p.text_output === 'string' && p.text_output.trim().length > 0 ? p.text_output.trim() : 
-                      (typeof p.textOutput === 'string' ? p.textOutput.trim() : '...SIGNAL LOST...');
-    
+    const textOutput = typeof p.text_output === 'string' && p.text_output.trim().length > 0 ? p.text_output.trim() :
+      (typeof p.textOutput === 'string' ? p.textOutput.trim() : '...SIGNAL LOST...');
+
     return { intensity, visualState, auditoryState, mutation, textOutput };
   }
 
@@ -215,7 +216,7 @@ const AIEngine = (() => {
     if (dice < 0.95) return 'purple';     // Purple (5%)
     if (dice < 0.97) return 'sad';        // Sad (2%)
     if (dice < 0.99) return 'synthesis';  // Synthesis (2%)
-    
+
     return 'infested'; // Infested (1%)
   }
 
@@ -292,7 +293,7 @@ const AIEngine = (() => {
       console.log('AIEngine: Attempting network validation for key...');
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), 4000);
-      
+
       const res = await fetch(API_URL, {
         method: 'POST',
         headers: {
