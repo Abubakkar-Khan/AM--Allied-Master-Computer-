@@ -351,7 +351,6 @@ const App = (() => {
     AudioEngine.setIntensity(effectiveIntensity);
     CorruptionEngine.setIntensity(effectiveIntensity);
     VisualEngine.setEscalation(effectiveIntensity);
-    VisualEngine.updateBackground(effectiveIntensity);
 
     // Horror States & Dread Flashes
     if (effectiveIntensity >= 9) {
@@ -393,10 +392,14 @@ const App = (() => {
     }
 
     VisualEngine.setColorState(targetState);
+    
+    // Set intensity and background (Awaiting completion)
+    VisualEngine.setEscalation(effectiveIntensity);
+    await VisualEngine.updateBackground(effectiveIntensity);
 
     // Prioritize AI-requested background (e.g. waifu.gif)
     if (response.background_image) {
-      VisualEngine.setBackgroundImage(response.background_image, effectiveIntensity);
+      await VisualEngine.setBackgroundImage(response.background_image, effectiveIntensity);
     }
 
     // Small delay to ensure visual state is perceptible before speech/text starts

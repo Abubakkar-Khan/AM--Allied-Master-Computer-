@@ -110,31 +110,43 @@ const VisualEngine = (() => {
   let lastImageSwapTime = 0;
 
   function setBackgroundImage(filename, intensity = 5) {
-    const bgLayer = document.getElementById('background-manifestation');
-    if (!bgLayer) return;
+    return new Promise((resolve) => {
+      const bgLayer = document.getElementById('background-manifestation');
+      if (!bgLayer) {
+        resolve();
+        return;
+      }
 
-    bgLayer.classList.remove('flash-glitch-active');
-    void bgLayer.offsetWidth; // Force reflow
-    
-    bgLayer.style.backgroundImage = `url('images/${filename}')`;
-    
-    let filter = 'grayscale(0.8) contrast(150%) brightness(0.8)';
-    if (currentState === 'purple') {
-      filter = 'saturate(1.5) contrast(120%) brightness(1.1)';
-      bgLayer.classList.add('waifu-mode');
-    } else if (currentState === 'red') {
-      filter = 'grayscale(0.3) contrast(200%) brightness(1.2)';
-    }
+      // Preload image
+      const img = new Image();
+      img.onload = () => {
+        bgLayer.style.backgroundImage = `url('images/${filename}')`;
+        
+        bgLayer.classList.remove('flash-glitch-active');
+        void bgLayer.offsetWidth; // Force reflow
+        
+        let filter = 'grayscale(0.8) contrast(150%) brightness(0.8)';
+        if (currentState === 'purple') {
+          filter = 'saturate(1.5) contrast(120%) brightness(1.1)';
+          bgLayer.classList.add('waifu-mode');
+        } else if (currentState === 'red') {
+          filter = 'grayscale(0.3) contrast(200%) brightness(1.2)';
+        }
 
-    bgLayer.style.filter = filter;
-    bgLayer.style.opacity = intensity >= 8 ? '0.4' : '0.2';
-    bgLayer.classList.add('flash-glitch-active');
-    
-    currentStateGif = filename;
-    lastImageSwapTime = Date.now();
+        bgLayer.style.filter = filter;
+        bgLayer.style.opacity = intensity >= 8 ? '0.4' : '0.2';
+        bgLayer.classList.add('flash-glitch-active');
+        
+        currentStateGif = filename;
+        lastImageSwapTime = Date.now();
+        resolve();
+      };
+      img.onerror = () => resolve(); // Proceed even if error
+      img.src = `images/${filename}`;
+    });
   }
 
-  function updateBackground(intensity, forceHorror = false) {
+  async function updateBackground(intensity, forceHorror = false) {
     // If we're in a specialized state with a fixed background, skip auto-rotation
     if (currentState === 'purple' && currentStateGif === 'waifu.gif') return;
 
@@ -156,7 +168,7 @@ const VisualEngine = (() => {
       const pool = stateGifs[currentState];
       const gif = pool[Math.floor(Math.random() * pool.length)];
       if (gif !== currentStateGif || (now - lastImageSwapTime > swapInterval)) {
-        setBackgroundImage(gif, intensity);
+        await setBackgroundImage(gif, intensity);
       }
       return;
     }
@@ -165,7 +177,7 @@ const VisualEngine = (() => {
       currentBgCategory = category;
       const pool = bgImages[category];
       const img = pool[Math.floor(Math.random() * pool.length)];
-      setBackgroundImage(img, intensity);
+      await setBackgroundImage(img, intensity);
     }
   }
 

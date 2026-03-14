@@ -105,6 +105,7 @@ const TextEngine = (() => {
       } else {
         element.textContent += char;
         AudioEngine.playTick();
+        scrollToBottom();
       }
 
       // Variable speed
@@ -154,6 +155,7 @@ const TextEngine = (() => {
             element.textContent += char;
           }
           AudioEngine.playTick();
+          scrollToBottom();
           await delay(Math.random() * 5 + 5, signal);
         }
         lastIndex = currentIndex;
@@ -225,6 +227,13 @@ const TextEngine = (() => {
 
   function getRandomFragment() {
     return glitchFragments[Math.floor(Math.random() * glitchFragments.length)];
+  }
+
+  function scrollToBottom() {
+    const output = document.getElementById('terminal-output');
+    if (output) {
+      output.scrollTop = output.scrollHeight;
+    }
   }
 
   function delay(ms, signal) {
