@@ -392,14 +392,13 @@ const App = (() => {
     }
 
     VisualEngine.setColorState(targetState);
-    
-    // Set intensity and background (Awaiting completion)
     VisualEngine.setEscalation(effectiveIntensity);
-    await VisualEngine.updateBackground(effectiveIntensity);
-
-    // Prioritize AI-requested background (e.g. waifu.gif)
+    
+    // Prioritize AI-requested background or state-specific rotation
     if (response.background_image) {
       await VisualEngine.setBackgroundImage(response.background_image, effectiveIntensity);
+    } else {
+      await VisualEngine.updateBackground(effectiveIntensity);
     }
 
     // Small delay to ensure visual state is perceptible before speech/text starts

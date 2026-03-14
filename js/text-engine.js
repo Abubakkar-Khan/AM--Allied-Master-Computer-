@@ -133,12 +133,38 @@ const TextEngine = (() => {
     let lastIndex = 0;
     let isFinished = false;
 
+    // Fallback timer: manually advance if boundaries are slow/missing
+    let fallbackTimer = null;
+    const startFallbackTimer = () => {
+      if (fallbackTimer) clearInterval(fallbackTimer);
+      fallbackTimer = setInterval(() => {
+        if (signal.aborted || isFinished) {
+          clearInterval(fallbackTimer);
+          return;
+        }
+        // Advance by 1 char if the speech engine is silent/stuck
+        if (lastIndex < text.length) {
+          element.textContent += text[lastIndex];
+          lastIndex++;
+          scrollToBottom();
+        }
+      }, 100); // 10 chars per second safety
+    };
+
     // Boundary event gives us the character index the speech is currently at
     utterance.addEventListener('boundary', async (event) => {
       if (signal.aborted || isFinished) return;
       
+      // Reset fallback on active event
+      if (fallbackTimer) {
+        clearInterval(fallbackTimer);
+        startFallbackTimer();
+      }
+
       if (event.name === 'word') {
-        const currentIndex = event.charIndex + event.charLength;
+        const currentIndex = Math.min(text.length, event.charIndex + event.charLength);
+        if (currentIndex <= lastIndex) return; // Prevent jumping back
+
         const chunk = text.slice(lastIndex, currentIndex);
         
         // Type the chunk character by character (quickly)
@@ -161,6 +187,8 @@ const TextEngine = (() => {
         lastIndex = currentIndex;
       }
     });
+
+    startFallbackTimer();
 
     return new Promise((resolve) => {
       const finish = () => {

@@ -112,19 +112,26 @@ const VisualEngine = (() => {
   function setBackgroundImage(filename, intensity = 5) {
     return new Promise((resolve) => {
       const bgLayer = document.getElementById('background-manifestation');
+      const shield = document.getElementById('sync-shield');
       if (!bgLayer) {
         resolve();
         return;
       }
 
+      // Show shield if possible
+      if (shield) shield.classList.add('active');
+
       // Preload image
       const img = new Image();
       img.onload = () => {
+        // Apply the image
         bgLayer.style.backgroundImage = `url('images/${filename}')`;
         
+        // Reset effects
         bgLayer.classList.remove('flash-glitch-active');
         void bgLayer.offsetWidth; // Force reflow
         
+        // Dynamic Filter
         let filter = 'grayscale(0.8) contrast(150%) brightness(0.8)';
         if (currentState === 'purple') {
           filter = 'saturate(1.5) contrast(120%) brightness(1.1)';
@@ -139,9 +146,20 @@ const VisualEngine = (() => {
         
         currentStateGif = filename;
         lastImageSwapTime = Date.now();
+        
+        // Wait for painting then hide shield
+        requestAnimationFrame(() => {
+          requestAnimationFrame(() => {
+            if (shield) shield.classList.remove('active');
+            resolve();
+          });
+        });
+      };
+      img.onerror = () => {
+        console.warn(`VisualEngine: Failed to load ${filename}`);
+        if (shield) shield.classList.remove('active');
         resolve();
       };
-      img.onerror = () => resolve(); // Proceed even if error
       img.src = `images/${filename}`;
     });
   }

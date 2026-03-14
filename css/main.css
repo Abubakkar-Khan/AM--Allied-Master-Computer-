@@ -282,6 +282,23 @@ body {
   cursor: default;
   user-select: none;
   transition: color var(--state-transition);
+  /* Force hardware acceleration for smoother visuals */
+  backface-visibility: hidden;
+  -webkit-font-smoothing: antialiased;
+}
+
+#sync-shield {
+  position: fixed;
+  inset: 0;
+  background: #000;
+  z-index: 499; /* Just below UI, above background */
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.3s ease-in-out;
+}
+
+#sync-shield.active {
+  opacity: 1;
 }
 
 /* =========================================
