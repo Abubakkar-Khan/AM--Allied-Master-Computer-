@@ -37,7 +37,7 @@ const App = (() => {
     startIntroTelemetry();
 
     // Prioritize key from config.js, then fallback to local storage
-    const configKey = window.AM_CONFIG && window.AM_CONFIG.GROQ_API_KEY;
+    const configKey = window.AM_CONFIG && window.AM_CONFIG.GEMINI_API_KEY;
     const existingKey = configKey || AIEngine.getApiKey();
 
     if (existingKey) {
