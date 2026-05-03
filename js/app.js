@@ -42,7 +42,7 @@ const App = (() => {
 
     if (existingKey) {
       console.log('App: Auto-key detected. Validating neural link...');
-      checkAutoKey(existingKey);
+      await checkAutoKey(existingKey);
     } else {
       // No key found at all — show prompt after a short delay for dramatic effect
       setTimeout(() => {
@@ -58,11 +58,11 @@ const App = (() => {
       autoKeyValid = true;
       AIEngine.setApiKey(key);
     } else {
-      console.warn('App: Neural Bridge rejected provided key. Verification required.');
-      showApiPrompt();
+      console.warn('App: Neural Bridge rejected provided key or validation failed. Setting key regardless.');
+      AIEngine.setApiKey(key);
       if (apiError) {
         apiError.classList.remove('hidden');
-        apiError.textContent = 'NEURAL LINK FAILED — VERIFY SYSTEM KEY';
+        apiError.textContent = 'NEURAL LINK WARNING — SYSTEM KEY LOADED';
       }
     }
   }

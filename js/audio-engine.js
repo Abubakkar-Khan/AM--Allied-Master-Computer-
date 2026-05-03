@@ -47,7 +47,8 @@ const AudioEngine = (() => {
       env.allowLocalModels = false; 
       env.allowRemoteModels = true; 
       env.remoteHost = window.location.origin;
-      env.remotePathTemplate = window.location.pathname.replace(/\/[^/]+$/, '') + '/models/{model}/';
+      env.remotePathTemplate = 'models/{model}/';
+      env.localModelPath = 'models/';
       
       // Load from the local directory
       kokoro = await KokoroTTS.from_pretrained("kokoro", {

@@ -195,7 +195,7 @@ const AIEngine = (() => {
   async function safeFetchWithRetries(body) {
     let attempt = 0;
     let lastErr = null;
-    const url = `https://generativelanguage.googleapis.com/v1beta/models/${MODEL}:generateContent?key=${getApiKey()}`;
+    const url = `https://generativelanguage.googleapis.com/v1/models/${MODEL}:generateContent?key=${getApiKey()}`;
     
     while (attempt <= MAX_RETRIES) {
       const controller = new AbortController();
@@ -249,7 +249,7 @@ const AIEngine = (() => {
   // -----------------------------
   async function validateKey(key) {
     if (!key) return false;
-    const url = `https://generativelanguage.googleapis.com/v1beta/models/${MODEL}:generateContent?key=${key}`;
+    const url = `https://generativelanguage.googleapis.com/v1/models/${MODEL}:generateContent?key=${key}`;
     try {
       console.log('AIEngine: Attempting network validation for Gemini key...');
       const controller = new AbortController();
