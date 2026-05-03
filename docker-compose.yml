@@ -1,0 +1,13 @@
+version: '3.8'
+
+services:
+  am-computer:
+    build: 
+      context: .
+      dockerfile: Dockerfile
+    image: am-computer:AM_26
+    ports:
+      - "3005:80"
+    volumes:
+      - ./.env:/usr/share/nginx/html/.env
+    restart: always

@@ -1,0 +1,6 @@
+.git
+node_modules
+npm-debug.log
+.DS_Store
+# Optional: exclude .env if you plan to provide it via volumes or orchestration
+# .env
